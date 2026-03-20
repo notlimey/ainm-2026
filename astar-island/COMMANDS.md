@@ -39,6 +39,15 @@ for s in 0 1 2 3 4; do
 done
 ```
 
+# for 7 rounds
+```bash
+for r in {0..6}; do
+  for s in 0 1 2 3 4; do
+    ./predict data/training.bin data/grids.bin $r $s data/pred_r${r}_s${s}.bin
+  done
+done
+```
+
 ## 4. Submit predictions
 
 ```bash

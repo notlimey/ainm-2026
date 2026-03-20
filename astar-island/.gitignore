@@ -1,0 +1,16 @@
+# Compiled binaries
+simulation/predict
+simulation/mlp
+simulation/simulate
+simulation/calibrate
+simulation/calibrate_asan
+simulation/calibrate_ubsan
+
+# Binary data files
+simulation/data/*.bin
+
+# Node/Deno
+node_modules/
+
+# OS
+.DS_Store
