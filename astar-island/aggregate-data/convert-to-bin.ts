@@ -163,7 +163,7 @@ async function buildTraining() {
 	const buf: number[] = [];
 
 	buf.push(0x41, 0x53, 0x54, 0x46); // "ASTF"
-	writeU16(buf, 1);
+	writeU16(buf, 2); // v2: round+seed per sample
 	writeU32(buf, 0); // num_samples placeholder (offset 6)
 	writeU16(buf, 40);
 	writeU16(buf, NUM_CLASSES);
@@ -196,6 +196,8 @@ async function buildTraining() {
 			for (let y = 0; y < H; y++) {
 				for (let x = 0; x < W; x++) {
 					const f = features[y * W + x];
+					writeU16(buf, roundNum);
+					writeU16(buf, seedNum);
 					writeCellFeatures(buf, f);
 					for (let c = 0; c < NUM_CLASSES; c++)
 						writeF32(buf, gt[y][x][c]);

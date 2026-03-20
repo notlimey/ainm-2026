@@ -156,6 +156,11 @@ async function main() {
 		Array.from({ length: pred.W }, () => new Array(NUM_CLASSES).fill(0))
 	);
 
+	const queryDir = `data/queries/r${roundNum}`;
+	try { await Deno.mkdir(queryDir, { recursive: true }); } catch { /* */ }
+
+	const rawResults: { query: number; viewport: { x: number; y: number }; grid: number[][]; settlements: unknown[] }[] = [];
+
 	let queriesUsed = 0;
 	for (let q = 0; q < queriesPerSeed; q++) {
 		const vp = viewports[q % viewports.length];
@@ -169,6 +174,13 @@ async function main() {
 				viewport_y: vp.y,
 				viewport_w: viewportSize,
 				viewport_h: viewportSize,
+			});
+
+			rawResults.push({
+				query: q,
+				viewport: { x: vp.x, y: vp.y },
+				grid: result.grid,
+				settlements: result.settlements,
 			});
 
 			for (let gy = 0; gy < result.grid.length; gy++) {
@@ -189,6 +201,10 @@ async function main() {
 			break;
 		}
 	}
+
+	const queryFile = `${queryDir}/s${seedIdx}_queries.json`;
+	await Deno.writeTextFile(queryFile, JSON.stringify(rawResults, null, 2));
+	console.log(`Saved ${rawResults.length} raw query results to ${queryFile}`);
 
 	console.log(`\nBlending ${queriesUsed} query results with model prediction...`);
 

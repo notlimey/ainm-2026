@@ -27,6 +27,8 @@ Output goes to `simulation/data/`.
 ```bash
 cd simulation
 g++ -std=c++17 -O2 -o predict predict.cpp
+# for windows
+g++ -std=c++17 -O2 -o predict.exe predict.cpp
 
 # Single seed (auto-validates if ground truth exists)
 ./predict data/training.bin data/grids.bin <round> <seed> [output.bin]

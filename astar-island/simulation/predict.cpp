@@ -9,6 +9,8 @@
 
 struct TrainingSample
 {
+    uint16_t round;
+    uint16_t seed;
     CellFeatures features;
     float ground_truth[NUM_CLASSES];
 };
@@ -20,7 +22,8 @@ struct BucketKey
     uint8_t adj_settlement;
     uint8_t dist_settle_bin;
     uint8_t adj_forest;
-    uint8_t adj_ocean;
+    uint8_t settle_r3_bin;
+    uint8_t settle_r5_bin;
 
     bool operator<(const BucketKey& o) const
     {
@@ -29,7 +32,8 @@ struct BucketKey
         if(adj_settlement != o.adj_settlement) return adj_settlement < o.adj_settlement;
         if(dist_settle_bin != o.dist_settle_bin) return dist_settle_bin < o.dist_settle_bin;
         if(adj_forest != o.adj_forest) return adj_forest < o.adj_forest;
-        return adj_ocean < o.adj_ocean;
+        if(settle_r3_bin != o.settle_r3_bin) return settle_r3_bin < o.settle_r3_bin;
+        return settle_r5_bin < o.settle_r5_bin;
     }
 };
 
@@ -40,7 +44,8 @@ BucketKey make_key(const CellFeatures& f)
     k.is_coastal     = f.is_coastal;
     k.adj_settlement = std::min(f.adj_settlement, (uint8_t)3);
     k.adj_forest     = std::min(f.adj_forest, (uint8_t)2);
-    k.adj_ocean      = std::min(f.adj_ocean, (uint8_t)2);
+    k.settle_r3_bin  = std::min(f.settlements_r3, (uint8_t)4);
+    k.settle_r5_bin  = std::min((uint8_t)(f.settlements_r5 / 2), (uint8_t)3);
 
     if(f.dist_nearest_settlement <= 1.5f)      k.dist_settle_bin = 0;
     else if(f.dist_nearest_settlement <= 3.5f)  k.dist_settle_bin = 1;
@@ -57,11 +62,13 @@ BucketKey make_key_coarse(const CellFeatures& f)
     k.is_coastal     = f.is_coastal;
     k.adj_settlement = std::min(f.adj_settlement, (uint8_t)1);
     k.adj_forest     = 0;
-    k.adj_ocean      = 0;
+    k.settle_r3_bin  = std::min((uint8_t)(f.settlements_r3 / 2), (uint8_t)2);
+    k.settle_r5_bin  = 0;
 
-    if(f.dist_nearest_settlement <= 2.0f)       k.dist_settle_bin = 0;
-    else if(f.dist_nearest_settlement <= 5.0f)   k.dist_settle_bin = 1;
-    else                                         k.dist_settle_bin = 2;
+    if(f.dist_nearest_settlement <= 1.5f)       k.dist_settle_bin = 0;
+    else if(f.dist_nearest_settlement <= 3.5f)   k.dist_settle_bin = 1;
+    else if(f.dist_nearest_settlement <= 6.5f)   k.dist_settle_bin = 2;
+    else                                         k.dist_settle_bin = 3;
 
     return k;
 }
@@ -103,11 +110,17 @@ std::vector<TrainingSample> load_training(const std::string& path)
     uint16_t fs;  f.read((char*)&fs, 2);
     uint16_t nc;  f.read((char*)&nc, 2);
 
-    printf("Training: %u samples\n", n);
+    printf("Training: %u samples (v%d)\n", n, ver);
 
     std::vector<TrainingSample> samples(n);
     for(uint32_t i = 0; i < n; i++)
     {
+        if(ver >= 2)
+        {
+            f.read((char*)&samples[i].round, 2);
+            f.read((char*)&samples[i].seed, 2);
+        }
+        else { samples[i].round = 0; samples[i].seed = 0; }
         f.read((char*)&samples[i].features, sizeof(CellFeatures));
         f.read((char*)samples[i].ground_truth, sizeof(float) * NUM_CLASSES);
     }
@@ -230,7 +243,7 @@ int main(int argc, char* argv[])
 {
     if(argc < 5)
     {
-        printf("Usage: predict <training.bin> <grids.bin> <round> <seed> [prediction.bin]\n");
+        printf("Usage: predict <training.bin> <grids.bin> <round> <seed> [prediction.bin] [--exclude <round>]\n");
         return 1;
     }
 
@@ -238,7 +251,17 @@ int main(int argc, char* argv[])
     std::string grids_path = argv[2];
     int round = std::stoi(argv[3]);
     int seed  = std::stoi(argv[4]);
-    std::string out_path = argc >= 6 ? argv[5] : "";
+    std::string out_path;
+    int exclude_round = -1;
+
+    for(int i = 5; i < argc; i++)
+    {
+        std::string arg = argv[i];
+        if(arg == "--exclude" && i + 1 < argc)
+            exclude_round = std::stoi(argv[++i]);
+        else if(out_path.empty())
+            out_path = arg;
+    }
 
     auto samples = load_training(train_path);
     if(samples.empty()) return 1;
@@ -246,13 +269,18 @@ int main(int argc, char* argv[])
     std::map<BucketKey, Bucket> buckets;
     std::map<BucketKey, Bucket> buckets_coarse;
 
+    int used = 0, excluded = 0;
     for(auto& s : samples)
     {
+        if(exclude_round >= 0 && s.round == exclude_round) { excluded++; continue; }
         buckets[make_key(s.features)].add(s.ground_truth);
         buckets_coarse[make_key_coarse(s.features)].add(s.ground_truth);
+        used++;
     }
 
-    printf("Buckets: %d fine, %d coarse\n", (int)buckets.size(), (int)buckets_coarse.size());
+    printf("Training: %d used", used);
+    if(excluded > 0) printf(", %d excluded (round %d)", excluded, exclude_round);
+    printf("\nBuckets: %d fine, %d coarse\n", (int)buckets.size(), (int)buckets_coarse.size());
 
     std::vector<std::vector<int>> grid;
     int W, H;
@@ -273,7 +301,7 @@ int main(int argc, char* argv[])
             float* pred = prediction[y][x].data();
 
             auto it = buckets.find(make_key(cf));
-            if(it != buckets.end() && it->second.count >= 3)
+            if(it != buckets.end() && it->second.count >= 10)
             {
                 it->second.get_avg(pred);
                 fine_hits++;
