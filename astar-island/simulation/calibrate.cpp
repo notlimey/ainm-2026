@@ -19,56 +19,7 @@
 #include <map>
 #include "database.hpp"
 #include "features.hpp"
-
-// ─── Reuse SimParams and simulation from simulate.cpp ────────────────────────
-
-struct SimParams {
-    float init_population    = 1.0f;
-    float init_food          = 0.5f;
-    float init_defense       = 0.8f;
-    float init_tech          = 0.1f;
-
-    float food_per_forest    = 0.15f;
-    float food_per_plains    = 0.04f;
-    float food_per_coastal   = 0.03f;
-    float growth_threshold   = 0.4f;
-    float growth_rate        = 0.08f;
-    float expansion_pop      = 1.8f;
-    int   expansion_range    = 3;
-    float expansion_prob     = 0.3f;
-    float port_threshold     = 1.3f;
-    float port_prob          = 0.25f;
-    float longship_threshold = 1.5f;
-    float longship_prob      = 0.15f;
-
-    float raid_range_land    = 3.0f;
-    float raid_range_sea     = 8.0f;
-    float raid_prob_base     = 0.08f;
-    float raid_prob_desperate = 0.4f;
-    float desperation_food   = 0.15f;
-    float raid_damage        = 0.25f;
-    float raid_loot_frac     = 0.25f;
-    float conquest_prob      = 0.12f;
-
-    float trade_range        = 6.0f;
-    float trade_food         = 0.04f;
-    float trade_wealth       = 0.015f;
-    float tech_diffusion     = 0.08f;
-
-    float winter_base_loss   = 0.25f;
-    float winter_variance    = 0.12f;
-    float winter_catastrophe_prob = 0.05f;
-    float winter_catastrophe_mult = 2.5f;
-    float collapse_pop       = 0.08f;
-    float collapse_food      = 0.0f;
-    float collapse_defense   = 0.15f;
-
-    float ruin_reclaim_range = 2.5f;
-    float ruin_reclaim_prob  = 0.25f;
-    float ruin_forest_prob   = 0.15f;
-    float ruin_plains_prob   = 0.08f;
-    float forest_adj_bonus   = 0.05f;
-};
+#include "sim_params.hpp"
 
 // ─── Parameter vector encoding ───────────────────────────────────────────────
 
@@ -130,6 +81,9 @@ static const std::vector<ParamDef> PARAM_DEFS = {
     {"ruin_forest_prob",    0.02f, 0.5f,  0.15f},
     {"ruin_plains_prob",    0.01f, 0.3f,  0.08f},
     {"forest_adj_bonus",    0.005f,0.2f,  0.05f},
+
+    // Previously hardcoded — now calibrated
+    {"expansion_range",     1.0f,  8.0f,  3.0f},
 };
 
 static const int N_PARAMS = PARAM_DEFS.size();
@@ -183,7 +137,7 @@ SimParams vec_to_params(const std::vector<double>& v) {
     p.ruin_plains_prob   = v[i++];
     p.forest_adj_bonus   = v[i++];
 
-    p.expansion_range = 3; // fixed
+    p.expansion_range = std::max(1, (int)roundf(v[i++])); // continuous → int
     return p;
 }
 
@@ -199,7 +153,8 @@ std::vector<double> params_to_vec(const SimParams& p) {
         p.winter_base_loss, p.winter_variance, p.winter_catastrophe_prob,
         p.winter_catastrophe_mult, p.collapse_pop, p.collapse_food, p.collapse_defense,
         p.ruin_reclaim_range, p.ruin_reclaim_prob, p.ruin_forest_prob, p.ruin_plains_prob,
-        p.forest_adj_bonus
+        p.forest_adj_bonus,
+        (double)p.expansion_range  // now calibrated
     };
 }
 
@@ -734,27 +689,7 @@ struct CMAES {
     }
 };
 
-// ─── Save/Load params ───────────────────────────────────────────────────────
-
-void save_params(const std::string& path, const SimParams& p) {
-    std::ofstream f(path, std::ios::binary);
-    f.write("SIMP", 4);
-    f.write((const char*)&p, sizeof(SimParams));
-    f.close();
-    printf("Params saved: %s\n", path.c_str());
-}
-
-// ─── Main ───────────────────────────────────────────────────────────────────
-
-bool load_params(const std::string& path, SimParams& p) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) return false;
-    char magic[4]; f.read(magic, 4);
-    if (strncmp(magic, "SIMP", 4) != 0) return false;
-    f.read((char*)&p, sizeof(SimParams));
-    printf("Loaded initial params: %s\n", path.c_str());
-    return true;
-}
+// save_params / load_params now in sim_params.hpp
 
 int main(int argc, char** argv) {
     if (argc < 3) {

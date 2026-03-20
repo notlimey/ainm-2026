@@ -11,7 +11,7 @@
 #include "features.hpp"
 
 // --- Network architecture ---
-static const int NUM_INPUTS  = 21;
+static const int NUM_INPUTS  = 23;  // 21 + x/W, y/H position features
 static const int HIDDEN1     = 64;
 static const int HIDDEN2     = 64;
 static const int NUM_OUTPUTS = NUM_CLASSES; // 6
@@ -27,7 +27,8 @@ struct TrainingSample
 // --- Feature normalization: CellFeatures → 21 floats ---
 
 void features_to_input(const CellFeatures& cf, float* out,
-                        int total_settlements, int total_ports)
+                        int total_settlements, int total_ports,
+                        int W = 40, int H = 40)
 {
     int i = 0;
     // terrain one-hot (6)
@@ -54,6 +55,9 @@ void features_to_input(const CellFeatures& cf, float* out,
     // global (2)
     out[i++] = total_settlements / 20.0f;
     out[i++] = total_ports       / 10.0f;
+    // position features (2) — spatial signal the MLP was missing
+    out[i++] = cf.x / (float)W;
+    out[i++] = cf.y / (float)H;
 }
 
 // --- MLP ---
@@ -476,7 +480,7 @@ int main(int argc, char* argv[])
             auto it = grid_stats.find(k);
             int ts = it != grid_stats.end() ? it->second.total_settlements : 0;
             int tp = it != grid_stats.end() ? it->second.total_ports : 0;
-            features_to_input(samples[i].features, inputs[i].data(), ts, tp);
+            features_to_input(samples[i].features, inputs[i].data(), ts, tp, 40, 40);
         }
 
         // --- Train ---
@@ -533,7 +537,7 @@ int main(int argc, char* argv[])
         for(int x = 0; x < W; x++)
         {
             features_to_input(cell_features[y * W + x], input_buf,
-                              total_settle, total_port);
+                              total_settle, total_port, W, H);
             net.forward(input_buf);
 
             float* pred = prediction[y][x].data();
