@@ -376,6 +376,21 @@ public:
         return rounds;
     }
 
+    // ─── Get all records ──────────────────────────────────────────────────────
+    std::vector<WorldState> get_all()
+    {
+        std::vector<WorldState> states;
+        for(auto& e : index)
+            states.push_back(get(e.round, e.seed, e.year));
+        return states;
+    }
+
+    // ─── Check if a record exists ───────────────────────────────────────────
+    bool has(int round, int seed, int year)
+    {
+        return find_entry(round, seed, year) != nullptr;
+    }
+
     // ─── Print summary ───────────────────────────────────────────────────────
     void print_summary()
     {
