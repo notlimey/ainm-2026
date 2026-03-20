@@ -21,7 +21,6 @@ const char* terrain_name(int t)
     }
 }
 
-// Human-readable ID: [r1.s0.step5]
 std::string state_id(int round, int seed, int step)
 {
     return "[r" + std::to_string(round) +

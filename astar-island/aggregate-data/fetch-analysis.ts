@@ -12,8 +12,6 @@ async function ensureDir(path: string) {
 	}
 }
 
-// ─── Fetch and display my-rounds ────────────────────────────────────────────
-
 async function fetchMyRounds(): Promise<MyRound[]> {
 	console.log("Fetching my-rounds...\n");
 	const rounds = await api.getMyRounds();
@@ -30,15 +28,12 @@ async function fetchMyRounds(): Promise<MyRound[]> {
 	}
 	console.log();
 
-	// Save to file
 	const path = `${DATA_DIR}/my-rounds.json`;
 	await Deno.writeTextFile(path, JSON.stringify(rounds, null, 2));
 	console.log(`Saved to ${path}\n`);
 
 	return rounds;
 }
-
-// ─── Fetch analysis (ground truth) for completed rounds ─────────────────────
 
 async function fetchAnalysis(rounds: MyRound[]) {
 	const completed = rounds.filter((r) => r.status === "completed");
@@ -62,16 +57,13 @@ async function fetchAnalysis(rounds: MyRound[]) {
 		for (let seed = 0; seed < round.seeds_count; seed++) {
 			const outPath = `${roundDir}/s${seed}.json`;
 
-			// Skip if already fetched
 			try {
 				await Deno.stat(outPath);
 				console.log(
 					`  [r${round.round_number}.s${seed}] already exists, skipping`,
 				);
 				continue;
-			} catch {
-				// File doesn't exist, fetch it
-			}
+			} catch { /* doesn't exist */ }
 
 			try {
 				console.log(
@@ -107,8 +99,6 @@ async function fetchAnalysis(rounds: MyRound[]) {
 	console.log();
 }
 
-// ─── Also fetch initial states for completed rounds (training pairs) ────────
-
 async function fetchInitialStates(rounds: MyRound[]) {
 	const completed = rounds.filter((r) => r.status === "completed");
 
@@ -124,9 +114,7 @@ async function fetchInitialStates(rounds: MyRound[]) {
 				`  [r${round.round_number}] initial states already exist, skipping`,
 			);
 			continue;
-		} catch {
-			// doesn't exist
-		}
+		} catch { /* doesn't exist */ }
 
 		try {
 			console.log(
@@ -146,8 +134,6 @@ async function fetchInitialStates(rounds: MyRound[]) {
 	}
 	console.log();
 }
-
-// ─── Main ───────────────────────────────────────────────────────────────────
 
 const rounds = await fetchMyRounds();
 await fetchInitialStates(rounds);
