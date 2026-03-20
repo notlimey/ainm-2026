@@ -1,5 +1,4 @@
-import { NMAIAstarIsland } from "./client.ts";
-
+import { fetchAndStoreRounds } from "./rounds.ts";
 export function add(a: number, b: number): number {
 	return a + b;
 }
@@ -7,6 +6,4 @@ export function add(a: number, b: number): number {
 if (!import.meta.main)
 	throw new Error("This module is not meant to be imported");
 
-const api = new NMAIAstarIsland();
-const rounds = await api.getRounds();
-console.log("Rounds:", rounds);
+await fetchAndStoreRounds();
