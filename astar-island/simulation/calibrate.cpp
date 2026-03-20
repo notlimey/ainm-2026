@@ -14,6 +14,7 @@
 #include <numeric>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include <chrono>
 #include <map>
 #include "database.hpp"
@@ -489,6 +490,8 @@ void simulate_one(SimWorld& w, const SimParams& p) {
         phase_trade(w, p);
         phase_winter(w, p);
         phase_environment(w, p);
+        // Safety: cap settlements to prevent runaway growth
+        if ((int)w.settlements.size() > w.W * w.H * 2) break;
     }
 }
 
@@ -772,7 +775,7 @@ int main(int argc, char** argv) {
     int generations = 150;
     int rollouts = 30;
     std::string output = "data/params.bin";
-    int n_threads = std::thread::hardware_concurrency();
+    int n_threads = std::max(1u, std::thread::hardware_concurrency());
     double initial_sigma = 0.3;
     int cma_seed = 42;
     std::string init_params_path;
@@ -860,6 +863,7 @@ int main(int argc, char** argv) {
         std::vector<double> fitness(cma.lambda);
         std::mutex print_mtx;
 
+        std::atomic<int> completed{0};
         auto eval_one = [&](int idx) {
             SimParams p = vec_to_params(pop_real[idx]);
             double total_wkl = 0;
@@ -873,6 +877,12 @@ int main(int argc, char** argv) {
             double avg_wkl = total_wkl / n_cases;
             double score = std::max(0.0, std::min(100.0, 100.0 * exp(-3.0 * avg_wkl)));
             fitness[idx] = score;
+            int done = ++completed;
+            if (done % 4 == 0 || done == cma.lambda) {
+                std::lock_guard<std::mutex> lock(print_mtx);
+                printf("  eval %d/%d\r", done, cma.lambda);
+                fflush(stdout);
+            }
         };
 
         // Thread pool

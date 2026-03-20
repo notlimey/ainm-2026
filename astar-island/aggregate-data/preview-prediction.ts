@@ -94,6 +94,7 @@ interface SeedData {
 	H: number;
 	bucket: number[][][] | null;
 	mlp: number[][][] | null;
+	sim: number[][][] | null;
 	ground_truth: number[][][] | null;
 	initial_grid: number[][] | null;
 }
@@ -108,6 +109,7 @@ interface ScoreRow {
 	seed: number;
 	bucket: number | null;
 	mlp: number | null;
+	sim: number | null;
 	diff: number | null;
 }
 
@@ -141,8 +143,9 @@ function computeAllScores(rounds: RoundData[]): ScoreRow[] {
 		for (const s of r.seeds) {
 			const bucketScore = (s.ground_truth && s.bucket) ? computeScore(s.ground_truth, s.bucket, s.W, s.H) : null;
 			const mlpScore = (s.ground_truth && s.mlp) ? computeScore(s.ground_truth, s.mlp, s.W, s.H) : null;
+			const simScore = (s.ground_truth && s.sim) ? computeScore(s.ground_truth, s.sim, s.W, s.H) : null;
 			const diff = (bucketScore !== null && mlpScore !== null) ? mlpScore - bucketScore : null;
-			rows.push({ round: r.round, seed: s.seed, bucket: bucketScore, mlp: mlpScore, diff });
+			rows.push({ round: r.round, seed: s.seed, bucket: bucketScore, mlp: mlpScore, sim: simScore, diff });
 		}
 	}
 	return rows;
@@ -151,20 +154,21 @@ function computeAllScores(rounds: RoundData[]): ScoreRow[] {
 function generateScoreTableHTML(scores: ScoreRow[], rounds: RoundData[]): string {
 	const roundNums = [...new Set(scores.map(s => s.round))].sort((a, b) => a - b);
 	const seedNums = [...new Set(scores.map(s => s.seed))].sort((a, b) => a - b);
+	const showSim = scores.some(s => s.sim !== null);
+	const cols = showSim ? 4 : 3;
 
 	let html = `<div class="score-table-wrap"><table class="score-table">`;
-	// Header
 	html += `<thead><tr><th></th>`;
-	for (const r of roundNums) html += `<th colspan="3">R${r}</th>`;
-	html += `<th colspan="3">AVG</th></tr>`;
+	for (const r of roundNums) html += `<th colspan="${cols}">R${r}</th>`;
+	html += `<th colspan="${cols}">AVG</th></tr>`;
 	html += `<tr><th>Seed</th>`;
-	for (const _ of roundNums) html += `<th>Bucket</th><th>MLP</th><th>Diff</th>`;
-	html += `<th>Bucket</th><th>MLP</th><th>Diff</th></tr></thead><tbody>`;
+	const subHeaders = showSim ? '<th>Bucket</th><th>MLP</th><th>Sim</th><th>Diff</th>' : '<th>Bucket</th><th>MLP</th><th>Diff</th>';
+	for (const _ of roundNums) html += subHeaders;
+	html += subHeaders + `</tr></thead><tbody>`;
 
-	// Per-seed rows
 	for (const seed of seedNums) {
 		html += `<tr><td class="seed-cell">S${seed}</td>`;
-		let seedBucketSum = 0, seedMlpSum = 0, seedCount = 0;
+		let seedBucketSum = 0, seedMlpSum = 0, seedSimSum = 0, seedCount = 0, seedSimCount = 0;
 		for (const r of roundNums) {
 			const row = scores.find(s => s.round === r && s.seed === seed);
 			if (row) {
@@ -172,27 +176,38 @@ function generateScoreTableHTML(scores: ScoreRow[], rounds: RoundData[]): string
 				const mStr = row.mlp !== null ? row.mlp.toFixed(1) : '—';
 				const dStr = row.diff !== null ? (row.diff >= 0 ? '+' : '') + row.diff.toFixed(1) : '—';
 				const dClass = row.diff !== null ? (row.diff > 0 ? 'pos' : row.diff < 0 ? 'neg' : '') : '';
-				html += `<td>${bStr}</td><td>${mStr}</td><td class="${dClass}">${dStr}</td>`;
+				html += `<td>${bStr}</td><td>${mStr}</td>`;
+				if (showSim) {
+					const sStr = row.sim !== null ? row.sim.toFixed(1) : '—';
+					html += `<td>${sStr}</td>`;
+					if (row.sim !== null) { seedSimSum += row.sim; seedSimCount++; }
+				}
+				html += `<td class="${dClass}">${dStr}</td>`;
 				if (row.bucket !== null && row.mlp !== null) {
 					seedBucketSum += row.bucket; seedMlpSum += row.mlp; seedCount++;
 				}
 			} else {
-				html += `<td>—</td><td>—</td><td>—</td>`;
+				html += `<td>—</td><td>—</td>`;
+				if (showSim) html += `<td>—</td>`;
+				html += `<td>—</td>`;
 			}
 		}
 		if (seedCount > 0) {
 			const ab = seedBucketSum / seedCount, am = seedMlpSum / seedCount, ad = am - ab;
 			const dClass = ad > 0 ? 'pos' : ad < 0 ? 'neg' : '';
-			html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td><td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
+			html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td>`;
+			if (showSim) html += `<td><b>${seedSimCount > 0 ? (seedSimSum / seedSimCount).toFixed(1) : '—'}</b></td>`;
+			html += `<td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
 		} else {
-			html += `<td>—</td><td>—</td><td>—</td>`;
+			html += `<td>—</td><td>—</td>`;
+			if (showSim) html += `<td>—</td>`;
+			html += `<td>—</td>`;
 		}
 		html += `</tr>`;
 	}
 
-	// Round averages row
 	html += `<tr class="avg-row"><td class="seed-cell"><b>AVG</b></td>`;
-	let totalBucket = 0, totalMlp = 0, totalCount = 0;
+	let totalBucket = 0, totalMlp = 0, totalSim = 0, totalCount = 0, totalSimCount = 0;
 	for (const r of roundNums) {
 		const roundScores = scores.filter(s => s.round === r && s.bucket !== null && s.mlp !== null);
 		if (roundScores.length > 0) {
@@ -200,31 +215,47 @@ function generateScoreTableHTML(scores: ScoreRow[], rounds: RoundData[]): string
 			const am = roundScores.reduce((a, s) => a + s.mlp!, 0) / roundScores.length;
 			const ad = am - ab;
 			const dClass = ad > 0 ? 'pos' : ad < 0 ? 'neg' : '';
-			html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td><td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
+			html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td>`;
+			if (showSim) {
+				const simScores = roundScores.filter(s => s.sim !== null);
+				if (simScores.length > 0) {
+					const as2 = simScores.reduce((a, s) => a + s.sim!, 0) / simScores.length;
+					html += `<td><b>${as2.toFixed(1)}</b></td>`;
+					totalSim += as2; totalSimCount++;
+				} else { html += `<td>—</td>`; }
+			}
+			html += `<td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
 			totalBucket += ab; totalMlp += am; totalCount++;
 		} else {
-			html += `<td>—</td><td>—</td><td>—</td>`;
+			html += `<td>—</td><td>—</td>`;
+			if (showSim) html += `<td>—</td>`;
+			html += `<td>—</td>`;
 		}
 	}
 	if (totalCount > 0) {
 		const ab = totalBucket / totalCount, am = totalMlp / totalCount, ad = am - ab;
 		const dClass = ad > 0 ? 'pos' : ad < 0 ? 'neg' : '';
-		html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td><td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
+		html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td>`;
+		if (showSim) html += `<td><b>${totalSimCount > 0 ? (totalSim / totalSimCount).toFixed(1) : '—'}</b></td>`;
+		html += `<td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
 	} else {
-		html += `<td>—</td><td>—</td><td>—</td>`;
+		html += `<td>—</td><td>—</td>`;
+		if (showSim) html += `<td>—</td>`;
+		html += `<td>—</td>`;
 	}
 	html += `</tr></tbody></table></div>`;
 	return html;
 }
 
 function generateCSV(scores: ScoreRow[]): string {
-	const lines = ['round,seed,bucket,mlp,diff'];
+	const lines = ['round,seed,bucket,mlp,sim,diff'];
 	for (const s of scores) {
 		lines.push([
 			s.round,
 			s.seed,
 			s.bucket !== null ? s.bucket.toFixed(2) : '',
 			s.mlp !== null ? s.mlp.toFixed(2) : '',
+			s.sim !== null ? s.sim.toFixed(2) : '',
 			s.diff !== null ? s.diff.toFixed(2) : '',
 		].join(','));
 	}
@@ -540,6 +571,9 @@ for (const roundNum of roundNums) {
 		let mlp: number[][][] | null = null;
 		try { mlp = readPredictionBin(`${BIN_DIR}/pred_mlp_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
 
+		let sim: number[][][] | null = null;
+		try { sim = readPredictionBin(`${BIN_DIR}/pred_sim_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
+
 		const gt = readGroundTruthBin(gtPath, roundNum, seed);
 
 		seeds.push({
@@ -549,6 +583,7 @@ for (const roundNum of roundNums) {
 			H: gridData.H,
 			bucket,
 			mlp,
+			sim,
 			ground_truth: gt,
 			initial_grid: gridData.grid,
 		});
@@ -558,8 +593,9 @@ for (const roundNum of roundNums) {
 		allRounds.push({ round: roundNum, seeds });
 		const hasBucket = seeds.some(s => s.bucket);
 		const hasMlp = seeds.some(s => s.mlp);
+		const hasSim = seeds.some(s => s.sim);
 		const hasGt = seeds.some(s => s.ground_truth);
-		console.log(`  Round ${roundNum}: ${seeds.length} seeds [bucket:${hasBucket} mlp:${hasMlp} gt:${hasGt}]`);
+		console.log(`  Round ${roundNum}: ${seeds.length} seeds [bucket:${hasBucket} mlp:${hasMlp} sim:${hasSim} gt:${hasGt}]`);
 	}
 }
 
@@ -576,7 +612,9 @@ console.log(`\nScores CSV: ${csvPath}`);
 // Print summary table to console
 console.log('');
 const roundNumsForTable = [...new Set(scores.map(s => s.round))].sort((a, b) => a - b);
-const header = ['Seed', ...roundNumsForTable.map(r => `R${r} B/M/D`), 'AVG B/M/D'];
+const hasSim = scores.some(s => s.sim !== null);
+const colLabel = hasSim ? 'B/M/S' : 'B/M/D';
+const header = ['Seed', ...roundNumsForTable.map(r => `R${r} ${colLabel}`), `AVG ${colLabel}`];
 console.log(header.join('  '));
 console.log('-'.repeat(header.join('  ').length));
 const seedNums = [...new Set(scores.map(s => s.seed))].sort((a, b) => a - b);
@@ -585,7 +623,11 @@ for (const seed of seedNums) {
 	for (const r of roundNumsForTable) {
 		const row = scores.find(s => s.round === r && s.seed === seed);
 		if (row && row.bucket !== null && row.mlp !== null) {
-			parts.push(`${row.bucket!.toFixed(0)}/${row.mlp!.toFixed(0)}/${row.diff! >= 0 ? '+' : ''}${row.diff!.toFixed(0)}`);
+			if (hasSim) {
+				parts.push(`${row.bucket!.toFixed(0)}/${row.mlp!.toFixed(0)}/${row.sim !== null ? row.sim!.toFixed(0) : '-'}`);
+			} else {
+				parts.push(`${row.bucket!.toFixed(0)}/${row.mlp!.toFixed(0)}/${row.diff! >= 0 ? '+' : ''}${row.diff!.toFixed(0)}`);
+			}
 		} else {
 			parts.push('—');
 		}
@@ -594,8 +636,14 @@ for (const seed of seedNums) {
 	if (seedScores.length > 0) {
 		const ab = seedScores.reduce((a, s) => a + s.bucket!, 0) / seedScores.length;
 		const am = seedScores.reduce((a, s) => a + s.mlp!, 0) / seedScores.length;
-		const ad = am - ab;
-		parts.push(`${ab.toFixed(0)}/${am.toFixed(0)}/${ad >= 0 ? '+' : ''}${ad.toFixed(0)}`);
+		if (hasSim) {
+			const simScores = seedScores.filter(s => s.sim !== null);
+			const as2 = simScores.length > 0 ? simScores.reduce((a, s) => a + s.sim!, 0) / simScores.length : 0;
+			parts.push(`${ab.toFixed(0)}/${am.toFixed(0)}/${simScores.length > 0 ? as2.toFixed(0) : '-'}`);
+		} else {
+			const ad = am - ab;
+			parts.push(`${ab.toFixed(0)}/${am.toFixed(0)}/${ad >= 0 ? '+' : ''}${ad.toFixed(0)}`);
+		}
 	}
 	console.log(parts.join('  '));
 }
