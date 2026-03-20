@@ -146,13 +146,16 @@ function writeCellFeatures(buf: number[], f: CellFeatures) {
 	writeU8(buf, f.adj_mountain);
 	writeU8(buf, f.adj_settlement);
 	writeU8(buf, f.adj_plains);
+	writeU8(buf, 0); writeU8(buf, 0); writeU8(buf, 0); // padding to offset 20
 	writeF32(buf, f.dist_nearest_settlement);
 	writeF32(buf, f.dist_nearest_port);
 	writeU8(buf, f.settlements_r3);
 	writeU8(buf, f.settlements_r5);
 	writeU8(buf, f.is_coastal);
+	writeU8(buf, 0); // padding to offset 32
 	writeF32(buf, f.dist_coast);
 	writeU8(buf, f.land_cells_5x5);
+	writeU8(buf, 0); writeU8(buf, 0); writeU8(buf, 0); // padding to 40 bytes
 }
 
 async function buildTraining() {
