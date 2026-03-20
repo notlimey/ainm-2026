@@ -5,12 +5,7 @@
 #include <map>
 #include <cmath>
 #include <cstdint>
-#include <filesystem>
-#include <nlohmann/json.hpp>
 #include "features.hpp"
-
-namespace fs = std::filesystem;
-using json = nlohmann::json;
 
 struct TrainingSample
 {
@@ -108,7 +103,7 @@ std::vector<TrainingSample> load_training(const std::string& path)
     uint16_t fs;  f.read((char*)&fs, 2);
     uint16_t nc;  f.read((char*)&nc, 2);
 
-    printf("Loading %u training samples (v%d, %d features bytes, %d classes)\n", n, ver, fs, nc);
+    printf("Training: %u samples\n", n);
 
     std::vector<TrainingSample> samples(n);
     for(uint32_t i = 0; i < n; i++)
@@ -117,6 +112,108 @@ std::vector<TrainingSample> load_training(const std::string& path)
         f.read((char*)samples[i].ground_truth, sizeof(float) * NUM_CLASSES);
     }
     return samples;
+}
+
+bool load_grid(const std::string& path, int want_round, int want_seed,
+               std::vector<std::vector<int>>& grid, int& W, int& H)
+{
+    std::ifstream f(path, std::ios::binary);
+    if(!f) { printf("Error: cannot open %s\n", path.c_str()); return false; }
+
+    char magic[4];
+    f.read(magic, 4);
+    uint16_t ver; f.read((char*)&ver, 2);
+    uint32_t count; f.read((char*)&count, 4);
+
+    for(uint32_t i = 0; i < count; i++)
+    {
+        int32_t round, seed, w, h;
+        f.read((char*)&round, 4);
+        f.read((char*)&seed, 4);
+        f.read((char*)&w, 4);
+        f.read((char*)&h, 4);
+
+        if(round == want_round && seed == want_seed)
+        {
+            W = w; H = h;
+            grid.resize(H);
+            for(int y = 0; y < H; y++)
+            {
+                grid[y].resize(W);
+                for(int x = 0; x < W; x++)
+                    f.read((char*)&grid[y][x], 4);
+            }
+            return true;
+        }
+        else
+        {
+            f.seekg((int64_t)w * h * 4, std::ios::cur);
+        }
+    }
+
+    printf("Grid not found: round=%d seed=%d\n", want_round, want_seed);
+    return false;
+}
+
+bool load_ground_truth(const std::string& path, int want_round, int want_seed,
+                       std::vector<std::vector<std::vector<float>>>& gt, int& W, int& H)
+{
+    std::ifstream f(path, std::ios::binary);
+    if(!f) return false;
+
+    char magic[4];
+    f.read(magic, 4);
+    uint16_t ver; f.read((char*)&ver, 2);
+    uint32_t count; f.read((char*)&count, 4);
+
+    for(uint32_t i = 0; i < count; i++)
+    {
+        int32_t round, seed, w, h;
+        f.read((char*)&round, 4);
+        f.read((char*)&seed, 4);
+        f.read((char*)&w, 4);
+        f.read((char*)&h, 4);
+
+        if(round == want_round && seed == want_seed)
+        {
+            W = w; H = h;
+            gt.resize(H);
+            for(int y = 0; y < H; y++)
+            {
+                gt[y].resize(W);
+                for(int x = 0; x < W; x++)
+                {
+                    gt[y][x].resize(NUM_CLASSES);
+                    for(int c = 0; c < NUM_CLASSES; c++)
+                        f.read((char*)&gt[y][x][c], 4);
+                }
+            }
+            return true;
+        }
+        else
+        {
+            f.seekg((int64_t)w * h * NUM_CLASSES * 4, std::ios::cur);
+        }
+    }
+    return false;
+}
+
+void write_prediction(const std::string& path, int round, int seed, int W, int H,
+                      const std::vector<std::vector<std::vector<float>>>& pred)
+{
+    std::ofstream f(path, std::ios::binary);
+    f.write("ASTP", 4);
+    uint16_t ver = 1;
+    f.write((char*)&ver, 2);
+    f.write((char*)&round, 4);
+    f.write((char*)&seed, 4);
+    f.write((char*)&W, 4);
+    f.write((char*)&H, 4);
+    for(int y = 0; y < H; y++)
+        for(int x = 0; x < W; x++)
+            for(int c = 0; c < NUM_CLASSES; c++)
+                f.write((char*)&pred[y][x][c], 4);
+    f.close();
 }
 
 void apply_floor(float* probs, float floor_val = 0.01f)
@@ -131,19 +228,17 @@ void apply_floor(float* probs, float floor_val = 0.01f)
 
 int main(int argc, char* argv[])
 {
-    if(argc < 3)
+    if(argc < 5)
     {
-        printf("Usage: predict <training.bin> <initial_state.json> [output.json]\n");
-        printf("\n");
-        printf("  training.bin       - from build_training\n");
-        printf("  initial_state.json - analysis JSON (uses initial_grid) or round detail\n");
-        printf("  output.json        - prediction tensor [y][x][6] (default: stdout stats)\n");
+        printf("Usage: predict <training.bin> <grids.bin> <round> <seed> [prediction.bin]\n");
         return 1;
     }
 
-    std::string train_path  = argv[1];
-    std::string input_path  = argv[2];
-    std::string output_path = argc >= 4 ? argv[3] : "";
+    std::string train_path = argv[1];
+    std::string grids_path = argv[2];
+    int round = std::stoi(argv[3]);
+    int seed  = std::stoi(argv[4]);
+    std::string out_path = argc >= 6 ? argv[5] : "";
 
     auto samples = load_training(train_path);
     if(samples.empty()) return 1;
@@ -157,27 +252,12 @@ int main(int argc, char* argv[])
         buckets_coarse[make_key_coarse(s.features)].add(s.ground_truth);
     }
 
-    printf("Built %d fine buckets, %d coarse buckets\n\n",
-        (int)buckets.size(), (int)buckets_coarse.size());
-
-    std::ifstream f(input_path);
-    json j = json::parse(f);
+    printf("Buckets: %d fine, %d coarse\n", (int)buckets.size(), (int)buckets_coarse.size());
 
     std::vector<std::vector<int>> grid;
-    json& grid_json = j.contains("initial_grid") && !j["initial_grid"].is_null()
-                      ? j["initial_grid"]
-                      : j["grid"];
-
-    int H = grid_json.size();
-    int W = grid_json[0].size();
-    grid.resize(H);
-    for(int y = 0; y < H; y++)
-    {
-        grid[y].resize(W);
-        for(int x = 0; x < W; x++)
-            grid[y][x] = grid_json[y][x];
-    }
-    printf("Input grid: %dx%d\n", W, H);
+    int W, H;
+    if(!load_grid(grids_path, round, seed, grid, W, H)) return 1;
+    printf("Grid [r%d.s%d]: %dx%d\n", round, seed, W, H);
 
     auto features = extract_features(grid);
     std::vector<std::vector<std::vector<float>>> prediction(H,
@@ -221,19 +301,22 @@ int main(int argc, char* argv[])
     printf("Predictions: %d fine, %d coarse, %d fallback\n",
         fine_hits, coarse_hits, fallbacks);
 
-    if(j.contains("ground_truth") && !j["ground_truth"].is_null())
+    std::string gt_path = "data/ground_truth.bin";
+    std::vector<std::vector<std::vector<float>>> gt;
+    int gtW, gtH;
+    if(load_ground_truth(gt_path, round, seed, gt, gtW, gtH))
     {
         double total_entropy = 0, total_weighted_kl = 0;
         int dynamic_cells = 0;
 
-        for(int y = 0; y < H; y++)
+        for(int y = 0; y < H && y < gtH; y++)
         {
-            for(int x = 0; x < W; x++)
+            for(int x = 0; x < W && x < gtW; x++)
             {
                 double ent = 0;
                 for(int c = 0; c < NUM_CLASSES; c++)
                 {
-                    float p = j["ground_truth"][y][x][c].get<float>();
+                    float p = gt[y][x][c];
                     if(p > 0) ent -= p * log(p);
                 }
 
@@ -244,7 +327,7 @@ int main(int argc, char* argv[])
                 double kl = 0;
                 for(int c = 0; c < NUM_CLASSES; c++)
                 {
-                    float p = j["ground_truth"][y][x][c].get<float>();
+                    float p = gt[y][x][c];
                     float q = prediction[y][x][c];
                     if(p > 0) kl += p * log(p / std::max(q, 1e-10f));
                 }
@@ -254,32 +337,16 @@ int main(int argc, char* argv[])
 
         double weighted_kl = total_entropy > 0 ? total_weighted_kl / total_entropy : 0;
         double score = std::max(0.0, std::min(100.0, 100.0 * exp(-3.0 * weighted_kl)));
-        printf("\nValidation (vs ground truth in same file):\n");
+        printf("\nValidation vs ground truth:\n");
         printf("  Dynamic cells: %d\n", dynamic_cells);
         printf("  Weighted KL:   %.6f\n", weighted_kl);
         printf("  Score:         %.2f / 100\n", score);
     }
 
-    if(!output_path.empty())
+    if(!out_path.empty())
     {
-        json out = json::array();
-        for(int y = 0; y < H; y++)
-        {
-            json row = json::array();
-            for(int x = 0; x < W; x++)
-            {
-                json cell = json::array();
-                for(int c = 0; c < NUM_CLASSES; c++)
-                    cell.push_back(prediction[y][x][c]);
-                row.push_back(cell);
-            }
-            out.push_back(row);
-        }
-
-        std::ofstream of(output_path);
-        of << out.dump();
-        of.close();
-        printf("Prediction written to %s\n", output_path.c_str());
+        write_prediction(out_path, round, seed, W, H, prediction);
+        printf("Written to %s\n", out_path.c_str());
     }
 
     return 0;
