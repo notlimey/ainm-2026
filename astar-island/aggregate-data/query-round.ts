@@ -290,7 +290,7 @@ async function main() {
 		console.log("Usage: query-round.ts <round_number> [options]");
 		console.log("  --queries-per-seed N   queries per seed (default: 10)");
 		console.log("  --viewport N           viewport size (default: 15)");
-		console.log("  --model TYPE           bucket|mlp|ensemble (default: ensemble)");
+		console.log("  --model TYPE           bucket|mlp|sim|ensemble (default: sim)");
 		console.log("  --dry-run              skip API calls, use stored queries only");
 		console.log("  --blend-only           no queries, just blend stored queries with models");
 		console.log("  --seeds 0,1,2,3,4      which seeds to process (default: all)");
@@ -299,7 +299,7 @@ async function main() {
 
 	const queriesPerSeed = parseInt(args.find((_, i) => args[i - 1] === "--queries-per-seed") || "10");
 	const vpSize = parseInt(args.find((_, i) => args[i - 1] === "--viewport") || "15");
-	const modelType = args.find((_, i) => args[i - 1] === "--model") || "ensemble";
+	const modelType = args.find((_, i) => args[i - 1] === "--model") || "sim";
 	const dryRun = args.includes("--dry-run");
 	const blendOnly = args.includes("--blend-only");
 	const seedArg = args.find((_, i) => args[i - 1] === "--seeds");
@@ -332,19 +332,28 @@ async function main() {
 
 		let bucketPred: ReturnType<typeof readPrediction> | null = null;
 		let mlpPred: ReturnType<typeof readPrediction> | null = null;
+		let simPred: ReturnType<typeof readPrediction> | null = null;
 		let W = 40, H = 40;
 
 		try { bucketPred = readPrediction(bucketPath); W = bucketPred.W; H = bucketPred.H; console.log(`  Loaded bucket: ${bucketPath}`); } catch { console.log(`  No bucket prediction at ${bucketPath}`); }
 		try { mlpPred = readPrediction(mlpPath); W = mlpPred.W; H = mlpPred.H; console.log(`  Loaded MLP: ${mlpPath}`); } catch { console.log(`  No MLP prediction at ${mlpPath}`); }
+		const simPath = `${BIN_DIR}/pred_sim_r${roundNum}_s${seedIdx}.bin`;
+		try { simPred = readPrediction(simPath); W = simPred.W; H = simPred.H; console.log(`  Loaded sim: ${simPath}`); } catch { console.log(`  No sim prediction at ${simPath}`); }
 
-		if (modelType === "ensemble" && bucketPred && mlpPred) {
+		if (modelType === "sim" && simPred) {
+			console.log(`  Using sim (calibrated simulator)`);
+			modelPred = simPred.prediction;
+		} else if (modelType === "ensemble" && bucketPred && mlpPred) {
 			console.log(`  Using ensemble (70/30 bucket+mlp)`);
 			modelPred = ensemblePredictions(bucketPred.prediction, mlpPred.prediction, W, H);
 		} else if (modelType === "mlp" && mlpPred) {
 			modelPred = mlpPred.prediction;
+		} else if (simPred) {
+			modelPred = simPred.prediction;
+			if (modelType !== "sim") console.log(`  Falling back to sim model`);
 		} else if (bucketPred) {
 			modelPred = bucketPred.prediction;
-			if (modelType !== "bucket") console.log(`  Falling back to bucket model`);
+			console.log(`  Falling back to bucket model`);
 		} else if (mlpPred) {
 			modelPred = mlpPred.prediction;
 		} else {

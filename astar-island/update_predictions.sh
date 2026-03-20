@@ -47,10 +47,10 @@ for R in $ROUNDS; do
 done
 
 echo ""
-echo "=== MLP predictions (7 epochs) ==="
+echo "=== MLP predictions (3 epochs) ==="
 for R in $ROUNDS; do
     for S in 0 1 2 3 4; do
-        ./mlp data/training.bin data/grids.bin "$R" "$S" "data/pred_mlp_r${R}_s${S}.bin" --exclude "$R" --epochs 7 2>&1 | grep -E "Score" || true
+        ./mlp data/training.bin data/grids.bin "$R" "$S" "data/pred_mlp_r${R}_s${S}.bin" --exclude "$R" --epochs 3 2>&1 | grep -E "Score" || true
     done
 done
 
