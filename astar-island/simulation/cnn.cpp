@@ -6,6 +6,7 @@
 //        [--exclude <round>] [--epochs N] [--lr F] [--sim-dir path]
 //
 // Compile: c++ -std=c++17 -O3 -o cnn cnn.cpp
+// Linux:   g++ -std=c++17 -O3 -pthread -o cnn cnn.cpp
 
 #include <iostream>
 #include <fstream>
@@ -19,6 +20,9 @@
 #include <numeric>
 #include <set>
 #include <cassert>
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 static const int NUM_CLASSES = 6;
 static const int GRID_W = 40;
@@ -539,34 +543,36 @@ void softmax_forward(const Tensor& z, Tensor& out)
 
 struct UNet
 {
+    int ch0, ch1, ch_bot; // channel sizes for each level
+
     // Encoder Level 0: 40x40
-    ConvLayer enc0_conv1; // IN_CHANNELS -> 32
+    ConvLayer enc0_conv1; // IN_CHANNELS -> ch0
     InstanceNormLayer enc0_bn1;
-    ConvLayer enc0_conv2; // 32 -> 32
+    ConvLayer enc0_conv2; // ch0 -> ch0
     InstanceNormLayer enc0_bn2;
 
     // Encoder Level 1: 20x20
-    ConvLayer enc1_conv1; // 32 -> 64
+    ConvLayer enc1_conv1; // ch0 -> ch1
     InstanceNormLayer enc1_bn1;
-    ConvLayer enc1_conv2; // 64 -> 64
+    ConvLayer enc1_conv2; // ch1 -> ch1
     InstanceNormLayer enc1_bn2;
 
     // Bottleneck: 10x10
-    ConvLayer bot_conv1; // 64 -> 128
+    ConvLayer bot_conv1; // ch1 -> ch_bot
     InstanceNormLayer bot_bn1;
-    ConvLayer bot_conv2; // 128 -> 64
+    ConvLayer bot_conv2; // ch_bot -> ch1
     InstanceNormLayer bot_bn2;
 
     // Decoder Level 1: 20x20
-    ConvLayer dec1_conv1; // 128 -> 64 (64 upsample + 64 skip)
+    ConvLayer dec1_conv1; // ch1*2 -> ch1 (ch1 upsample + ch1 skip)
     InstanceNormLayer dec1_bn1;
-    ConvLayer dec1_conv2; // 64 -> 32
+    ConvLayer dec1_conv2; // ch1 -> ch0
     InstanceNormLayer dec1_bn2;
 
     // Decoder Level 0: 40x40
-    ConvLayer dec0_conv1; // 64 -> 32 (32 upsample + 32 skip)
+    ConvLayer dec0_conv1; // ch0*2 -> ch0 (ch0 upsample + ch0 skip)
     InstanceNormLayer dec0_bn1;
-    ConvLayer dec0_conv2; // 32 -> 6 (output logits)
+    ConvLayer dec0_conv2; // ch0 -> 6 (output logits)
     // No BN or ReLU after final conv
 
     // --- Cached forward activations for backprop ---
@@ -608,17 +614,18 @@ struct UNet
 
     int adam_t = 0;
 
-    UNet()
-        : enc0_conv1(IN_CHANNELS, 32, 3, 3), enc0_bn1(32),
-          enc0_conv2(32, 32, 3, 3),           enc0_bn2(32),
-          enc1_conv1(32, 64, 3, 3),           enc1_bn1(64),
-          enc1_conv2(64, 64, 3, 3),           enc1_bn2(64),
-          bot_conv1(64, 128, 3, 3),           bot_bn1(128),
-          bot_conv2(128, 64, 3, 3),           bot_bn2(64),
-          dec1_conv1(128, 64, 3, 3),          dec1_bn1(64),
-          dec1_conv2(64, 32, 3, 3),           dec1_bn2(32),
-          dec0_conv1(64, 32, 3, 3),           dec0_bn1(32),
-          dec0_conv2(32, NUM_CLASSES, 3, 3)
+    UNet(int c0 = 32, int c1 = 64, int cb = 128)
+        : ch0(c0), ch1(c1), ch_bot(cb),
+          enc0_conv1(IN_CHANNELS, c0, 3, 3), enc0_bn1(c0),
+          enc0_conv2(c0, c0, 3, 3),          enc0_bn2(c0),
+          enc1_conv1(c0, c1, 3, 3),          enc1_bn1(c1),
+          enc1_conv2(c1, c1, 3, 3),          enc1_bn2(c1),
+          bot_conv1(c1, cb, 3, 3),           bot_bn1(cb),
+          bot_conv2(cb, c1, 3, 3),           bot_bn2(c1),
+          dec1_conv1(c1*2, c1, 3, 3),        dec1_bn1(c1),
+          dec1_conv2(c1, c0, 3, 3),          dec1_bn2(c0),
+          dec0_conv1(c0*2, c0, 3, 3),        dec0_bn1(c0),
+          dec0_conv2(c0, NUM_CLASSES, 3, 3)
     {}
 
     void init(std::mt19937& rng)
@@ -746,9 +753,9 @@ struct UNet
         Tensor d_dec0_z1 = dec0_bn1.backward(d_dec0_a1);
         Tensor d_cat0    = dec0_conv1.backward(d_dec0_z1);
 
-        // Split cat0 gradient: up0 (32ch) + enc0_out skip (32ch)
+        // Split cat0 gradient: up0 (ch0) + enc0_out skip (ch0)
         Tensor d_up0, d_enc0_skip;
-        split_gradient(d_cat0, 32, d_up0, d_enc0_skip);
+        split_gradient(d_cat0, ch0, d_up0, d_enc0_skip);
 
         Tensor d_dec1_out = upsample2x2_backward(d_up0);
 
@@ -760,9 +767,9 @@ struct UNet
         Tensor d_dec1_z1 = dec1_bn1.backward(d_dec1_a1);
         Tensor d_cat1    = dec1_conv1.backward(d_dec1_z1);
 
-        // Split cat1 gradient: up1 (64ch) + enc1_out skip (64ch)
+        // Split cat1 gradient: up1 (ch1) + enc1_out skip (ch1)
         Tensor d_up1, d_enc1_skip;
-        split_gradient(d_cat1, 64, d_up1, d_enc1_skip);
+        split_gradient(d_cat1, ch1, d_up1, d_enc1_skip);
 
         Tensor d_bot_out = upsample2x2_backward(d_up1);
 
@@ -1205,7 +1212,7 @@ int main(int argc, char* argv[])
     {
         printf("Usage: cnn <grids.bin> <ground_truth.bin> <round> <seed> [prediction.bin]\n"
                "  [--exclude <round>] [--epochs N] [--lr F]\n"
-               "  [--sim-dir path]\n");
+               "  [--sim-dir path] [--threads N] [--channels N]\n");
         return 1;
     }
 
@@ -1219,6 +1226,8 @@ int main(int argc, char* argv[])
     int epochs = 50;
     float lr = 0.001f;
     std::string sim_dir = "data/";
+    int n_threads = std::max(1u, std::thread::hardware_concurrency());
+    int base_channels = 16; // default slim for fast Mac training
 
     for(int i = 5; i < argc; i++)
     {
@@ -1227,6 +1236,8 @@ int main(int argc, char* argv[])
         else if(arg == "--epochs" && i+1 < argc) epochs = std::stoi(argv[++i]);
         else if(arg == "--lr" && i+1 < argc) lr = std::stof(argv[++i]);
         else if(arg == "--sim-dir" && i+1 < argc) sim_dir = argv[++i];
+        else if(arg == "--threads" && i+1 < argc) n_threads = std::stoi(argv[++i]);
+        else if(arg == "--channels" && i+1 < argc) base_channels = std::stoi(argv[++i]);
         else if(out_path.empty()) out_path = arg;
     }
 
@@ -1352,7 +1363,8 @@ int main(int argc, char* argv[])
     printf("Augmented training samples: %d\n", (int)train_samples.size());
 
     // --- Initialize U-Net ---
-    UNet net;
+    int c0 = base_channels, c1 = base_channels * 2, cb = base_channels * 4;
+    UNet net(c0, c1, cb);
     std::mt19937 rng(42);
     net.init(rng);
 
@@ -1371,20 +1383,29 @@ int main(int argc, char* argv[])
     total_params += count_conv_params(net.dec0_conv1) + count_bn_params(net.dec0_bn1);
     total_params += count_conv_params(net.dec0_conv2);
 
-    printf("U-Net Architecture:\n");
-    printf("  Encoder:    Conv(13->32)->IN->ReLU->Conv(32->32)->IN->ReLU -> Pool\n");
-    printf("              Conv(32->64)->IN->ReLU->Conv(64->64)->IN->ReLU -> Pool\n");
-    printf("  Bottleneck: Conv(64->128)->IN->ReLU->Conv(128->64)->IN->ReLU\n");
-    printf("  Decoder:    Up->Cat(128)->Conv(128->64)->IN->ReLU->Conv(64->32)->IN->ReLU\n");
-    printf("              Up->Cat(64)->Conv(64->32)->IN->ReLU->Conv(32->6) + Residual\n");
+    printf("U-Net Architecture (channels: %d/%d/%d):\n", c0, c1, cb);
+    printf("  Encoder:    Conv(13->%d)->IN->ReLU->Conv(%d->%d)->IN->ReLU -> Pool\n", c0, c0, c0);
+    printf("              Conv(%d->%d)->IN->ReLU->Conv(%d->%d)->IN->ReLU -> Pool\n", c0, c1, c1, c1);
+    printf("  Bottleneck: Conv(%d->%d)->IN->ReLU->Conv(%d->%d)->IN->ReLU\n", c1, cb, cb, c1);
+    printf("  Decoder:    Up->Cat(%d)->Conv(%d->%d)->IN->ReLU->Conv(%d->%d)->IN->ReLU\n", c1*2, c1*2, c1, c1, c0);
+    printf("              Up->Cat(%d)->Conv(%d->%d)->IN->ReLU->Conv(%d->6) + Residual\n", c0*2, c0*2, c0, c0);
     printf("  Total parameters: %d\n", total_params);
+    printf("  Threads: %d\n", n_threads);
     printf("Epochs: %d, Adam LR: %.4f, Augmented samples: %d\n",
            epochs, lr, (int)train_samples.size());
 
-    // --- Train ---
+    // --- Create per-thread UNet clones for parallel training ---
+    std::vector<UNet> thread_nets;
+    if(n_threads > 1) {
+        thread_nets.resize(n_threads, UNet(c0, c1, cb));
+        // They don't need their own weights - we'll copy before each batch
+    }
+
+    // --- Train with mini-batch parallelism ---
     int N = (int)train_samples.size();
     std::vector<int> indices(N);
     std::iota(indices.begin(), indices.end(), 0);
+    int batch_size = std::max(1, std::min(n_threads, N));
 
     for(int ep = 0; ep < epochs; ep++)
     {
@@ -1392,22 +1413,104 @@ int main(int argc, char* argv[])
         double epoch_loss = 0;
         int total_dynamic = 0;
 
-        for(int i = 0; i < N; i++)
+        for(int batch_start = 0; batch_start < N; batch_start += batch_size)
         {
-            int idx = indices[i];
-            auto& s = train_samples[idx];
+            int batch_end = std::min(batch_start + batch_size, N);
+            int this_batch = batch_end - batch_start;
 
-            net.zero_grad();
-            net.forward(s.input, /*training=*/true);
-            float loss = net.backward(s.input, s.target, s.mask);
+            if(n_threads <= 1 || this_batch == 1)
+            {
+                // Sequential path (Mac single-threaded or single sample)
+                for(int i = batch_start; i < batch_end; i++)
+                {
+                    auto& s = train_samples[indices[i]];
+                    net.zero_grad();
+                    net.forward(s.input, true);
+                    float loss = net.backward(s.input, s.target, s.mask);
+                    int dyn = 0;
+                    for(float m : s.mask) if(m > 0.5f) dyn++;
+                    total_dynamic += dyn;
+                    net.update(lr, std::max(dyn, 1));
+                    epoch_loss += loss;
+                }
+            }
+            else
+            {
+                // Parallel path: each thread processes one sample into its own net
+                std::vector<double> t_loss(this_batch, 0);
+                std::vector<int> t_dyn(this_batch, 0);
+                std::vector<std::thread> threads;
 
-            // Count dynamic cells for normalization
-            int dyn = 0;
-            for(float m : s.mask) if(m > 0.5f) dyn++;
-            total_dynamic += dyn;
+                for(int t = 0; t < this_batch; t++)
+                {
+                    threads.emplace_back([&, t]() {
+                        auto& tnet = thread_nets[t];
+                        // Copy current weights to thread net
+                        // (we copy all layer weights - shared read is fine for forward)
+                        auto copy_conv_w = [](ConvLayer& dst, const ConvLayer& src) {
+                            dst.weights = src.weights;
+                            dst.bias = src.bias;
+                        };
+                        auto copy_bn_w = [](InstanceNormLayer& dst, const InstanceNormLayer& src) {
+                            dst.gamma = src.gamma;
+                            dst.beta = src.beta;
+                            dst.running_mean = src.running_mean;
+                            dst.running_var = src.running_var;
+                            dst.has_running_stats = src.has_running_stats;
+                        };
+                        copy_conv_w(tnet.enc0_conv1, net.enc0_conv1); copy_bn_w(tnet.enc0_bn1, net.enc0_bn1);
+                        copy_conv_w(tnet.enc0_conv2, net.enc0_conv2); copy_bn_w(tnet.enc0_bn2, net.enc0_bn2);
+                        copy_conv_w(tnet.enc1_conv1, net.enc1_conv1); copy_bn_w(tnet.enc1_bn1, net.enc1_bn1);
+                        copy_conv_w(tnet.enc1_conv2, net.enc1_conv2); copy_bn_w(tnet.enc1_bn2, net.enc1_bn2);
+                        copy_conv_w(tnet.bot_conv1, net.bot_conv1);   copy_bn_w(tnet.bot_bn1, net.bot_bn1);
+                        copy_conv_w(tnet.bot_conv2, net.bot_conv2);   copy_bn_w(tnet.bot_bn2, net.bot_bn2);
+                        copy_conv_w(tnet.dec1_conv1, net.dec1_conv1); copy_bn_w(tnet.dec1_bn1, net.dec1_bn1);
+                        copy_conv_w(tnet.dec1_conv2, net.dec1_conv2); copy_bn_w(tnet.dec1_bn2, net.dec1_bn2);
+                        copy_conv_w(tnet.dec0_conv1, net.dec0_conv1); copy_bn_w(tnet.dec0_bn1, net.dec0_bn1);
+                        copy_conv_w(tnet.dec0_conv2, net.dec0_conv2);
 
-            net.update(lr, std::max(dyn, 1));
-            epoch_loss += loss;
+                        auto& s = train_samples[indices[batch_start + t]];
+                        tnet.zero_grad();
+                        tnet.forward(s.input, true);
+                        t_loss[t] = tnet.backward(s.input, s.target, s.mask);
+                        int dyn = 0;
+                        for(float m : s.mask) if(m > 0.5f) dyn++;
+                        t_dyn[t] = dyn;
+                    });
+                }
+                for(auto& th : threads) th.join();
+
+                // Accumulate gradients from all threads into main net
+                net.zero_grad();
+                auto accum_conv = [](ConvLayer& dst, const ConvLayer& src) {
+                    for(size_t i = 0; i < dst.dweights.size(); i++) dst.dweights[i] += src.dweights[i];
+                    for(size_t i = 0; i < dst.dbias.size(); i++) dst.dbias[i] += src.dbias[i];
+                };
+                auto accum_bn = [](InstanceNormLayer& dst, const InstanceNormLayer& src) {
+                    for(int i = 0; i < dst.channels; i++) { dst.dgamma[i] += src.dgamma[i]; dst.dbeta[i] += src.dbeta[i]; }
+                };
+                int batch_dynamic = 0;
+                for(int t = 0; t < this_batch; t++)
+                {
+                    auto& tnet = thread_nets[t];
+                    accum_conv(net.enc0_conv1, tnet.enc0_conv1); accum_bn(net.enc0_bn1, tnet.enc0_bn1);
+                    accum_conv(net.enc0_conv2, tnet.enc0_conv2); accum_bn(net.enc0_bn2, tnet.enc0_bn2);
+                    accum_conv(net.enc1_conv1, tnet.enc1_conv1); accum_bn(net.enc1_bn1, tnet.enc1_bn1);
+                    accum_conv(net.enc1_conv2, tnet.enc1_conv2); accum_bn(net.enc1_bn2, tnet.enc1_bn2);
+                    accum_conv(net.bot_conv1, tnet.bot_conv1);   accum_bn(net.bot_bn1, tnet.bot_bn1);
+                    accum_conv(net.bot_conv2, tnet.bot_conv2);   accum_bn(net.bot_bn2, tnet.bot_bn2);
+                    accum_conv(net.dec1_conv1, tnet.dec1_conv1); accum_bn(net.dec1_bn1, tnet.dec1_bn1);
+                    accum_conv(net.dec1_conv2, tnet.dec1_conv2); accum_bn(net.dec1_bn2, tnet.dec1_bn2);
+                    accum_conv(net.dec0_conv1, tnet.dec0_conv1); accum_bn(net.dec0_bn1, tnet.dec0_bn1);
+                    accum_conv(net.dec0_conv2, tnet.dec0_conv2);
+                    epoch_loss += t_loss[t];
+                    batch_dynamic += t_dyn[t];
+                    total_dynamic += t_dyn[t];
+                }
+
+                // Update with this batch's gradients only
+                net.update(lr, std::max(batch_dynamic, 1));
+            }
         }
 
         printf("  Epoch %3d/%d  loss=%.6f  (avg per dynamic cell: %.6f)\n",
@@ -1438,7 +1541,10 @@ int main(int argc, char* argv[])
 
     // Build input and run forward (inference mode)
     Tensor input = build_input(sim_pred, grid, H, W);
-    Tensor prediction = net.forward(input, /*training=*/false);
+    // Use training mode for inference too — instance norm computes per-sample
+    // spatial stats, so running stats aren't needed (and may not be updated
+    // correctly when training with multiple threads)
+    Tensor prediction = net.forward(input, /*training=*/true);
 
     // Apply probability floor
     apply_floor_tensor(prediction, 0.005f);

@@ -79,12 +79,12 @@ function readGroundTruthBin(path: string, wantRound: number, wantSeed: number) {
 }
 
 const CLASSES = [
-	{ name: "Empty/Ocean/Plains", color: [200, 184, 138] },
-	{ name: "Settlement", color: [212, 118, 10] },
-	{ name: "Port", color: [14, 116, 144] },
-	{ name: "Ruin", color: [127, 29, 29] },
-	{ name: "Forest", color: [45, 90, 39] },
-	{ name: "Mountain", color: [107, 114, 128] },
+	{ name: "Empty/Ocean/Plains", short: "Empty", color: [200, 184, 138] },
+	{ name: "Settlement", short: "Settle", color: [212, 118, 10] },
+	{ name: "Port", short: "Port", color: [14, 116, 144] },
+	{ name: "Ruin", short: "Ruin", color: [127, 29, 29] },
+	{ name: "Forest", short: "Forest", color: [45, 90, 39] },
+	{ name: "Mountain", short: "Mtn", color: [107, 114, 128] },
 ];
 
 interface SeedData {
@@ -95,6 +95,8 @@ interface SeedData {
 	bucket: number[][][] | null;
 	mlp: number[][][] | null;
 	sim: number[][][] | null;
+	cnn: number[][][] | null;
+	blend: number[][][] | null;
 	ground_truth: number[][][] | null;
 	initial_grid: number[][] | null;
 }
@@ -110,7 +112,8 @@ interface ScoreRow {
 	bucket: number | null;
 	mlp: number | null;
 	sim: number | null;
-	diff: number | null;
+	cnn: number | null;
+	blend: number | null;
 }
 
 function entropy(p: number[]): number {
@@ -141,154 +144,127 @@ function computeAllScores(rounds: RoundData[]): ScoreRow[] {
 	const rows: ScoreRow[] = [];
 	for (const r of rounds) {
 		for (const s of r.seeds) {
-			const bucketScore = (s.ground_truth && s.bucket) ? computeScore(s.ground_truth, s.bucket, s.W, s.H) : null;
-			const mlpScore = (s.ground_truth && s.mlp) ? computeScore(s.ground_truth, s.mlp, s.W, s.H) : null;
-			const simScore = (s.ground_truth && s.sim) ? computeScore(s.ground_truth, s.sim, s.W, s.H) : null;
-			const diff = (bucketScore !== null && mlpScore !== null) ? mlpScore - bucketScore : null;
-			rows.push({ round: r.round, seed: s.seed, bucket: bucketScore, mlp: mlpScore, sim: simScore, diff });
+			const gt = s.ground_truth;
+			rows.push({
+				round: r.round,
+				seed: s.seed,
+				bucket: (gt && s.bucket) ? computeScore(gt, s.bucket, s.W, s.H) : null,
+				mlp: (gt && s.mlp) ? computeScore(gt, s.mlp, s.W, s.H) : null,
+				sim: (gt && s.sim) ? computeScore(gt, s.sim, s.W, s.H) : null,
+				cnn: (gt && s.cnn) ? computeScore(gt, s.cnn, s.W, s.H) : null,
+				blend: (gt && s.blend) ? computeScore(gt, s.blend, s.W, s.H) : null,
+			});
 		}
 	}
 	return rows;
 }
 
-function generateScoreTableHTML(scores: ScoreRow[], rounds: RoundData[]): string {
+function scoreColor(s: number | null): string {
+	if (s === null) return '#555';
+	if (s >= 80) return '#4ade80';
+	if (s >= 65) return '#a3e635';
+	if (s >= 50) return '#facc15';
+	return '#f87171';
+}
+
+function generateScoreTableHTML(scores: ScoreRow[]): string {
 	const roundNums = [...new Set(scores.map(s => s.round))].sort((a, b) => a - b);
 	const seedNums = [...new Set(scores.map(s => s.seed))].sort((a, b) => a - b);
-	const showSim = scores.some(s => s.sim !== null);
-	const cols = showSim ? 4 : 3;
+	const models = ['bucket', 'mlp', 'sim', 'cnn', 'blend'] as const;
+	const modelLabels: Record<string, string> = { bucket: 'Bkt', mlp: 'MLP', sim: 'Sim', cnn: 'CNN', blend: 'Blend' };
+
+	// Only show models that have at least one score
+	const activeModels = models.filter(m => scores.some(s => s[m] !== null));
+	const cols = activeModels.length;
 
 	let html = `<div class="score-table-wrap"><table class="score-table">`;
 	html += `<thead><tr><th></th>`;
 	for (const r of roundNums) html += `<th colspan="${cols}">R${r}</th>`;
 	html += `<th colspan="${cols}">AVG</th></tr>`;
 	html += `<tr><th>Seed</th>`;
-	const subHeaders = showSim ? '<th>Bucket</th><th>MLP</th><th>Sim</th><th>Diff</th>' : '<th>Bucket</th><th>MLP</th><th>Diff</th>';
+	const subHeaders = activeModels.map(m => `<th>${modelLabels[m]}</th>`).join('');
 	for (const _ of roundNums) html += subHeaders;
 	html += subHeaders + `</tr></thead><tbody>`;
 
 	for (const seed of seedNums) {
 		html += `<tr><td class="seed-cell">S${seed}</td>`;
-		let seedBucketSum = 0, seedMlpSum = 0, seedSimSum = 0, seedCount = 0, seedSimCount = 0;
+		const seedSums: Record<string, number> = {};
+		const seedCounts: Record<string, number> = {};
+		for (const m of activeModels) { seedSums[m] = 0; seedCounts[m] = 0; }
+
 		for (const r of roundNums) {
 			const row = scores.find(s => s.round === r && s.seed === seed);
-			if (row) {
-				const bStr = row.bucket !== null ? row.bucket.toFixed(1) : '—';
-				const mStr = row.mlp !== null ? row.mlp.toFixed(1) : '—';
-				const dStr = row.diff !== null ? (row.diff >= 0 ? '+' : '') + row.diff.toFixed(1) : '—';
-				const dClass = row.diff !== null ? (row.diff > 0 ? 'pos' : row.diff < 0 ? 'neg' : '') : '';
-				html += `<td>${bStr}</td><td>${mStr}</td>`;
-				if (showSim) {
-					const sStr = row.sim !== null ? row.sim.toFixed(1) : '—';
-					html += `<td>${sStr}</td>`;
-					if (row.sim !== null) { seedSimSum += row.sim; seedSimCount++; }
+			for (const m of activeModels) {
+				const v = row ? row[m] : null;
+				if (v !== null) {
+					// Find best score for this round+seed to highlight
+					const allVals = activeModels.map(mm => row ? row[mm] : null).filter(x => x !== null) as number[];
+					const best = Math.max(...allVals);
+					const isBest = Math.abs(v - best) < 0.01;
+					const color = scoreColor(v);
+					html += `<td style="color:${color}">${isBest ? '<b>' : ''}${v.toFixed(1)}${isBest ? '</b>' : ''}</td>`;
+					seedSums[m] += v; seedCounts[m]++;
+				} else {
+					html += `<td style="color:#333">-</td>`;
 				}
-				html += `<td class="${dClass}">${dStr}</td>`;
-				if (row.bucket !== null && row.mlp !== null) {
-					seedBucketSum += row.bucket; seedMlpSum += row.mlp; seedCount++;
-				}
-			} else {
-				html += `<td>—</td><td>—</td>`;
-				if (showSim) html += `<td>—</td>`;
-				html += `<td>—</td>`;
 			}
 		}
-		if (seedCount > 0) {
-			const ab = seedBucketSum / seedCount, am = seedMlpSum / seedCount, ad = am - ab;
-			const dClass = ad > 0 ? 'pos' : ad < 0 ? 'neg' : '';
-			html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td>`;
-			if (showSim) html += `<td><b>${seedSimCount > 0 ? (seedSimSum / seedSimCount).toFixed(1) : '—'}</b></td>`;
-			html += `<td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
-		} else {
-			html += `<td>—</td><td>—</td>`;
-			if (showSim) html += `<td>—</td>`;
-			html += `<td>—</td>`;
+		// Seed averages
+		for (const m of activeModels) {
+			if (seedCounts[m] > 0) {
+				const avg = seedSums[m] / seedCounts[m];
+				html += `<td style="color:${scoreColor(avg)}"><b>${avg.toFixed(1)}</b></td>`;
+			} else {
+				html += `<td>-</td>`;
+			}
 		}
 		html += `</tr>`;
 	}
 
+	// Average row
 	html += `<tr class="avg-row"><td class="seed-cell"><b>AVG</b></td>`;
-	let totalBucket = 0, totalMlp = 0, totalSim = 0, totalCount = 0, totalSimCount = 0;
+	const totalSums: Record<string, number> = {};
+	const totalCounts: Record<string, number> = {};
+	for (const m of activeModels) { totalSums[m] = 0; totalCounts[m] = 0; }
+
 	for (const r of roundNums) {
-		const roundScores = scores.filter(s => s.round === r && s.bucket !== null && s.mlp !== null);
-		if (roundScores.length > 0) {
-			const ab = roundScores.reduce((a, s) => a + s.bucket!, 0) / roundScores.length;
-			const am = roundScores.reduce((a, s) => a + s.mlp!, 0) / roundScores.length;
-			const ad = am - ab;
-			const dClass = ad > 0 ? 'pos' : ad < 0 ? 'neg' : '';
-			html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td>`;
-			if (showSim) {
-				const simScores = roundScores.filter(s => s.sim !== null);
-				if (simScores.length > 0) {
-					const as2 = simScores.reduce((a, s) => a + s.sim!, 0) / simScores.length;
-					html += `<td><b>${as2.toFixed(1)}</b></td>`;
-					totalSim += as2; totalSimCount++;
-				} else { html += `<td>—</td>`; }
+		for (const m of activeModels) {
+			const roundScores = scores.filter(s => s.round === r && s[m] !== null);
+			if (roundScores.length > 0) {
+				const avg = roundScores.reduce((a, s) => a + s[m]!, 0) / roundScores.length;
+				const color = scoreColor(avg);
+				html += `<td style="color:${color}"><b>${avg.toFixed(1)}</b></td>`;
+				totalSums[m] += avg; totalCounts[m]++;
+			} else {
+				html += `<td>-</td>`;
 			}
-			html += `<td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
-			totalBucket += ab; totalMlp += am; totalCount++;
-		} else {
-			html += `<td>—</td><td>—</td>`;
-			if (showSim) html += `<td>—</td>`;
-			html += `<td>—</td>`;
 		}
 	}
-	if (totalCount > 0) {
-		const ab = totalBucket / totalCount, am = totalMlp / totalCount, ad = am - ab;
-		const dClass = ad > 0 ? 'pos' : ad < 0 ? 'neg' : '';
-		html += `<td><b>${ab.toFixed(1)}</b></td><td><b>${am.toFixed(1)}</b></td>`;
-		if (showSim) html += `<td><b>${totalSimCount > 0 ? (totalSim / totalSimCount).toFixed(1) : '—'}</b></td>`;
-		html += `<td class="${dClass}"><b>${(ad >= 0 ? '+' : '') + ad.toFixed(1)}</b></td>`;
-	} else {
-		html += `<td>—</td><td>—</td>`;
-		if (showSim) html += `<td>—</td>`;
-		html += `<td>—</td>`;
+	// Grand averages
+	for (const m of activeModels) {
+		if (totalCounts[m] > 0) {
+			const avg = totalSums[m] / totalCounts[m];
+			html += `<td style="color:${scoreColor(avg)}"><b>${avg.toFixed(1)}</b></td>`;
+		} else {
+			html += `<td>-</td>`;
+		}
 	}
 	html += `</tr></tbody></table></div>`;
 	return html;
 }
 
 function generateCSV(scores: ScoreRow[]): string {
-	const lines = ['round,seed,bucket,mlp,sim,diff'];
+	const lines = ['round,seed,bucket,mlp,sim,cnn,blend'];
 	for (const s of scores) {
 		lines.push([
-			s.round,
-			s.seed,
+			s.round, s.seed,
 			s.bucket !== null ? s.bucket.toFixed(2) : '',
 			s.mlp !== null ? s.mlp.toFixed(2) : '',
 			s.sim !== null ? s.sim.toFixed(2) : '',
-			s.diff !== null ? s.diff.toFixed(2) : '',
+			s.cnn !== null ? s.cnn.toFixed(2) : '',
+			s.blend !== null ? s.blend.toFixed(2) : '',
 		].join(','));
 	}
-	// Add round averages
-	const roundNums = [...new Set(scores.map(s => s.round))].sort((a, b) => a - b);
-	for (const r of roundNums) {
-		const rs = scores.filter(s => s.round === r);
-		const bScores = rs.filter(s => s.bucket !== null).map(s => s.bucket!);
-		const mScores = rs.filter(s => s.mlp !== null).map(s => s.mlp!);
-		const bAvg = bScores.length > 0 ? (bScores.reduce((a, b) => a + b, 0) / bScores.length) : null;
-		const mAvg = mScores.length > 0 ? (mScores.reduce((a, b) => a + b, 0) / mScores.length) : null;
-		const diff = (bAvg !== null && mAvg !== null) ? mAvg - bAvg : null;
-		lines.push([
-			r,
-			'avg',
-			bAvg !== null ? bAvg.toFixed(2) : '',
-			mAvg !== null ? mAvg.toFixed(2) : '',
-			diff !== null ? diff.toFixed(2) : '',
-		].join(','));
-	}
-	// Grand average
-	const allB = scores.filter(s => s.bucket !== null).map(s => s.bucket!);
-	const allM = scores.filter(s => s.mlp !== null).map(s => s.mlp!);
-	const gB = allB.length > 0 ? allB.reduce((a, b) => a + b, 0) / allB.length : null;
-	const gM = allM.length > 0 ? allM.reduce((a, b) => a + b, 0) / allM.length : null;
-	const gD = (gB !== null && gM !== null) ? gM - gB : null;
-	lines.push([
-		'all',
-		'avg',
-		gB !== null ? gB.toFixed(2) : '',
-		gM !== null ? gM.toFixed(2) : '',
-		gD !== null ? gD.toFixed(2) : '',
-	].join(','));
 	return lines.join('\n') + '\n';
 }
 
@@ -297,47 +273,49 @@ function generateHTML(rounds: RoundData[], scoreTableHTML: string): string {
 <html>
 <head>
 <meta charset="utf-8">
-<title>Astar Island — Dashboard</title>
+<title>A* Island - Dashboard</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'SF Mono','Fira Code',monospace;background:#0a0a0a;color:#e0e0e0;padding:20px}
-h1{font-size:18px;margin-bottom:12px;color:#fff}
+h1{font-size:18px;margin-bottom:4px;color:#fff}
+h1 span{font-size:12px;color:#555;font-weight:normal}
 .controls{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .controls label{font-size:12px;color:#888}
 .controls select,.controls input{background:#1a1a1a;color:#e0e0e0;border:1px solid #333;padding:4px 8px;font-family:inherit;font-size:12px;border-radius:3px}
 .seed-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;padding:8px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:4px}
 .seed-label{writing-mode:vertical-rl;text-orientation:mixed;font-size:13px;font-weight:bold;color:#555;padding:4px;display:flex;align-items:center;justify-content:center;min-width:24px}
-.seed-score{font-size:11px;color:#888;margin-top:4px}
 .grid-col{display:flex;flex-direction:column;align-items:center}
 .grid-col .col-label{font-size:10px;color:#555;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.5px}
-.grid-col .score-val{font-size:10px;margin-top:2px}
+.grid-col .score-val{font-size:10px;margin-top:2px;font-weight:bold}
+.models-2x2{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:2px;border:1px solid #222;border-radius:4px;background:#080808}
+.models-2x2 .grid-col .col-label{font-size:9px}
+.models-2x2 .grid-col .score-val{font-size:9px}
 .na{color:#333;font-size:11px;display:flex;align-items:center;justify-content:center;border:1px solid #1a1a1a;background:#0d0d0d;border-radius:2px}
 canvas{image-rendering:pixelated;border:1px solid #222;cursor:crosshair}
 .legend{display:flex;gap:12px;margin:8px 0;flex-wrap:wrap}
 .legend-item{display:flex;align-items:center;gap:4px;font-size:11px}
 .legend-swatch{width:12px;height:12px;border-radius:2px;border:1px solid #555}
+.separator{width:2px;background:#222;min-height:50px;margin:0 4px;border-radius:1px}
 .info-panel{background:#111;border:1px solid #333;padding:12px;font-size:12px;border-radius:4px;min-height:60px;position:sticky;bottom:0}
 .bar-row{display:flex;align-items:center;gap:6px;margin:2px 0}
-.bar-label{width:110px;font-size:11px}
-.bar-bg{width:120px;height:10px;background:#222;border-radius:2px;overflow:hidden}
+.bar-label{width:50px;font-size:10px}
+.bar-bg{width:100px;height:10px;background:#222;border-radius:2px;overflow:hidden}
 .bar-fill{height:100%;border-radius:2px}
 .bar-val{font-size:10px;width:40px;text-align:right}
-.info-cols{display:flex;gap:24px}
-.info-col{flex:1}
-.info-col-title{font-size:10px;color:#555;margin-bottom:4px;text-transform:uppercase}
+.info-cols{display:flex;gap:16px;flex-wrap:wrap}
+.info-col{flex:1;min-width:180px}
+.info-col-title{font-size:10px;color:#555;margin-bottom:4px;text-transform:uppercase;font-weight:bold}
 .score-table-wrap{margin-bottom:20px;overflow-x:auto}
 .score-table{border-collapse:collapse;font-size:11px;width:auto}
 .score-table th,.score-table td{padding:3px 8px;border:1px solid #222;text-align:right;white-space:nowrap}
 .score-table th{background:#151515;color:#888;font-weight:600;position:sticky;top:0}
 .score-table td{background:#0d0d0d}
 .score-table .seed-cell{text-align:left;color:#888;font-weight:600}
-.score-table .pos{color:#4ade80}
-.score-table .neg{color:#f87171}
 .score-table .avg-row td{border-top:2px solid #444}
 </style>
 </head>
 <body>
-<h1>Astar Island — Dashboard</h1>
+<h1>A* Island - Dashboard <span>NM i AI 2026</span></h1>
 ${scoreTableHTML}
 <div class="controls">
   <label>Round: <select id="roundSelect"></select></label>
@@ -352,14 +330,16 @@ ${scoreTableHTML}
     <option value="2">Port</option><option value="3">Ruin</option>
     <option value="4">Forest</option><option value="5">Mountain</option>
   </select></label>
-  <label>Zoom: <input id="zoom" type="range" min="4" max="18" value="10"></label>
+  <label>Zoom: <input id="zoom" type="range" min="3" max="18" value="8"></label>
+  <label>Model zoom: <input id="modelZoom" type="range" min="2" max="12" value="5"></label>
 </div>
 <div class="legend" id="legend"></div>
 <div id="seedRows"></div>
 <div class="info-panel" id="info">Hover over any cell</div>
 <script>
-const ROUNDS=${JSON.stringify(rounds.map(r=>({round:r.round,seeds:r.seeds.map(s=>({seed:s.seed,W:s.W,H:s.H,bucket:s.bucket,mlp:s.mlp,ground_truth:s.ground_truth,initial_grid:s.initial_grid}))})))};
+const ROUNDS=${JSON.stringify(rounds.map(r=>({round:r.round,seeds:r.seeds.map(s=>({seed:s.seed,W:s.W,H:s.H,bucket:s.bucket,mlp:s.mlp,sim:s.sim,cnn:s.cnn,blend:s.blend,ground_truth:s.ground_truth,initial_grid:s.initial_grid}))})))};
 const CN=${JSON.stringify(CLASSES.map(c=>c.name))};
+const CS=${JSON.stringify(CLASSES.map(c=>c.short))};
 const CC=${JSON.stringify(CLASSES.map(c=>c.color))};
 
 const roundSel=document.getElementById('roundSelect');
@@ -367,6 +347,7 @@ const vm=document.getElementById('viewMode');
 const cs=document.getElementById('classSelect');
 const cw=document.getElementById('classWrap');
 const zm=document.getElementById('zoom');
+const mzm=document.getElementById('modelZoom');
 const info=document.getElementById('info');
 const seedRows=document.getElementById('seedRows');
 
@@ -386,6 +367,10 @@ function score(gt,pred,W,H){
   }
   const wk=tE>0?tWK/tE:0;
   return Math.max(0,Math.min(100,100*Math.exp(-3*wk)));
+}
+
+function scColor(s){
+  if(s>=80)return'#4ade80';if(s>=65)return'#a3e635';if(s>=50)return'#facc15';return'#f87171';
 }
 
 function draw(cv,w,h,sz,fn){
@@ -415,7 +400,7 @@ let canvasMap=new Map();
 
 function render(){
   const rd=ROUNDS[roundSel.value];if(!rd)return;
-  const sz=parseInt(zm.value),mode=vm.value,ci=parseInt(cs.value);
+  const sz=parseInt(zm.value),msz=parseInt(mzm.value),mode=vm.value,ci=parseInt(cs.value);
   cw.style.display=mode==='class'?'':'none';
 
   const lg=document.getElementById('legend');
@@ -435,52 +420,104 @@ function render(){
 
     const {W:w,H:h}=s;
     let maxE=0;
-    if(s.ground_truth)for(let y=0;y<h;y++)for(let x=0;x<w;x++)maxE=Math.max(maxE,ent(s.ground_truth[y][x]));
-    if(s.bucket)for(let y=0;y<h;y++)for(let x=0;x<w;x++)maxE=Math.max(maxE,ent(s.bucket[y][x]));
-    if(s.mlp)for(let y=0;y<h;y++)for(let x=0;x<w;x++)maxE=Math.max(maxE,ent(s.mlp[y][x]));
+    const allPreds=[s.bucket,s.mlp,s.sim,s.cnn,s.blend,s.ground_truth];
+    for(const pred of allPreds){
+      if(pred)for(let y=0;y<h;y++)for(let x=0;x<w;x++)maxE=Math.max(maxE,ent(pred[y][x]));
+    }
 
-    const cols=[
-      {label:'Initial',type:'grid'},
-      {label:'Bucket',type:'probs',data:s.bucket},
-      {label:'Neural Net',type:'probs',data:s.mlp},
-      {label:'Ground Truth',type:'probs',data:s.ground_truth},
+    // Column 1: Initial grid (full size)
+    const initDiv=document.createElement('div');initDiv.className='grid-col';
+    const initLbl=document.createElement('div');initLbl.className='col-label';initLbl.textContent='Initial';
+    initDiv.appendChild(initLbl);
+    if(s.initial_grid){
+      const cv=document.createElement('canvas');
+      draw(cv,w,h,sz,(x,y)=>CC[tc(s.initial_grid[y][x])]);
+      initDiv.appendChild(cv);
+      canvasMap.set(cv,{seed:s,source:'initial'});
+    } else {
+      const na=document.createElement('div');na.className='na';na.style.width=w*sz+'px';na.style.height=h*sz+'px';na.textContent='N/A';
+      initDiv.appendChild(na);
+    }
+    row.appendChild(initDiv);
+
+    // Separator
+    const sep1=document.createElement('div');sep1.className='separator';row.appendChild(sep1);
+
+    // Column 2: 2x2 model grid (smaller zoom)
+    const models2x2=document.createElement('div');models2x2.className='models-2x2';
+    const modelDefs=[
+      {label:'Bucket',data:s.bucket,key:'bucket'},
+      {label:'MLP',data:s.mlp,key:'mlp'},
+      {label:'Sim',data:s.sim,key:'sim'},
+      {label:'CNN',data:s.cnn,key:'cnn'},
     ];
-
-    for(const col of cols){
-      const div=document.createElement('div');div.className='grid-col';
-      const clbl=document.createElement('div');clbl.className='col-label';clbl.textContent=col.label;
-      div.appendChild(clbl);
-
-      if(col.type==='grid'){
-        if(s.initial_grid){
-          const cv=document.createElement('canvas');
-          draw(cv,w,h,sz,(x,y)=>CC[tc(s.initial_grid[y][x])]);
-          div.appendChild(cv);
-          canvasMap.set(cv,{seed:s,source:'initial'});
-        } else {
-          const na=document.createElement('div');na.className='na';na.style.width=w*sz+'px';na.style.height=h*sz+'px';na.textContent='N/A';
-          div.appendChild(na);
+    for(const md of modelDefs){
+      const col=document.createElement('div');col.className='grid-col';
+      const clbl=document.createElement('div');clbl.className='col-label';clbl.textContent=md.label;
+      col.appendChild(clbl);
+      if(md.data){
+        const cv=document.createElement('canvas');
+        drawProbs(cv,md.data,w,h,msz,mode,ci,s.ground_truth,maxE);
+        col.appendChild(cv);
+        canvasMap.set(cv,{seed:s,source:md.key});
+        if(s.ground_truth){
+          const sc=score(s.ground_truth,md.data,w,h);
+          const sv=document.createElement('div');sv.className='score-val';
+          sv.style.color=scColor(sc);
+          sv.textContent=sc.toFixed(1);
+          col.appendChild(sv);
         }
       } else {
-        if(col.data){
-          const cv=document.createElement('canvas');
-          drawProbs(cv,col.data,w,h,sz,mode,ci,s.ground_truth,maxE);
-          div.appendChild(cv);
-          canvasMap.set(cv,{seed:s,source:col.label.toLowerCase().replace(' ','_')});
-          if(s.ground_truth&&col.data!==s.ground_truth){
-            const sc=score(s.ground_truth,col.data,w,h);
-            const sv=document.createElement('div');sv.className='score-val';
-            sv.style.color=sc>75?'#4ade80':sc>50?'#facc15':'#f87171';
-            sv.textContent=sc.toFixed(1);
-            div.appendChild(sv);
-          }
-        } else {
-          const na=document.createElement('div');na.className='na';na.style.width=w*sz+'px';na.style.height=h*sz+'px';na.textContent='N/A';
-          div.appendChild(na);
-        }
+        const na=document.createElement('div');na.className='na';na.style.width=w*msz+'px';na.style.height=h*msz+'px';na.textContent='N/A';
+        col.appendChild(na);
       }
-      row.appendChild(div);
+      models2x2.appendChild(col);
     }
+    row.appendChild(models2x2);
+
+    // Separator
+    const sep2=document.createElement('div');sep2.className='separator';row.appendChild(sep2);
+
+    // Column 3: Blend / Submission (full size)
+    const blendDiv=document.createElement('div');blendDiv.className='grid-col';
+    const blendLbl=document.createElement('div');blendLbl.className='col-label';blendLbl.textContent='Submission';
+    blendDiv.appendChild(blendLbl);
+    if(s.blend){
+      const cv=document.createElement('canvas');
+      drawProbs(cv,s.blend,w,h,sz,mode,ci,s.ground_truth,maxE);
+      blendDiv.appendChild(cv);
+      canvasMap.set(cv,{seed:s,source:'blend'});
+      if(s.ground_truth){
+        const sc=score(s.ground_truth,s.blend,w,h);
+        const sv=document.createElement('div');sv.className='score-val';
+        sv.style.color=scColor(sc);
+        sv.textContent=sc.toFixed(1);
+        blendDiv.appendChild(sv);
+      }
+    } else {
+      const na=document.createElement('div');na.className='na';na.style.width=w*sz+'px';na.style.height=h*sz+'px';na.textContent='N/A';
+      blendDiv.appendChild(na);
+    }
+    row.appendChild(blendDiv);
+
+    // Separator
+    const sep3=document.createElement('div');sep3.className='separator';row.appendChild(sep3);
+
+    // Column 4: Ground Truth (full size)
+    const gtDiv=document.createElement('div');gtDiv.className='grid-col';
+    const gtLbl=document.createElement('div');gtLbl.className='col-label';gtLbl.textContent='Ground Truth';
+    gtDiv.appendChild(gtLbl);
+    if(s.ground_truth){
+      const cv=document.createElement('canvas');
+      drawProbs(cv,s.ground_truth,w,h,sz,mode,ci,s.ground_truth,maxE);
+      gtDiv.appendChild(cv);
+      canvasMap.set(cv,{seed:s,source:'ground_truth'});
+    } else {
+      const na=document.createElement('div');na.className='na';na.style.width=w*sz+'px';na.style.height=h*sz+'px';na.textContent='No GT';
+      gtDiv.appendChild(na);
+    }
+    row.appendChild(gtDiv);
+
     seedRows.appendChild(row);
   }
 
@@ -492,28 +529,33 @@ function render(){
 function hover(e,cv){
   const meta=canvasMap.get(cv);if(!meta)return;
   const s=meta.seed;
-  const sz=parseInt(zm.value),rect=cv.getBoundingClientRect();
+  const sz=cv.width/s.W,rect=cv.getBoundingClientRect();
   const x=Math.floor((e.clientX-rect.left)/sz),y=Math.floor((e.clientY-rect.top)/sz);
   if(x<0||x>=s.W||y<0||y>=s.H)return;
 
   const ig=s.initial_grid?tc(s.initial_grid[y][x]):-1;
-  let html='<span style="color:#888">Cell ('+x+','+y+') seed '+s.seed;
-  if(ig>=0)html+=' — initial: '+CN[ig];
+  let html='<span style="color:#888">Cell ('+x+','+y+') R'+s.round+'.S'+s.seed;
+  if(ig>=0)html+=' | initial: <b>'+CS[ig]+'</b>';
   html+='</span><br><div class="info-cols">';
 
   const sources=[
     {name:'Bucket',data:s.bucket},
-    {name:'Neural Net',data:s.mlp},
+    {name:'MLP',data:s.mlp},
+    {name:'Sim',data:s.sim},
+    {name:'CNN',data:s.cnn},
+    {name:'Submission',data:s.blend},
     {name:'Ground Truth',data:s.ground_truth},
   ];
 
   for(const src of sources){
     if(!src.data)continue;
     const p=src.data[y][x];
-    let col='<div class="info-col"><div class="info-col-title">'+src.name+' (H:'+ent(p).toFixed(2)+')</div>';
+    const h=ent(p);
+    let col='<div class="info-col"><div class="info-col-title">'+src.name+' <span style="color:#666">(H:'+h.toFixed(2)+')</span></div>';
     for(let i=0;i<6;i++){
       const c=CC[i],pv=(p[i]*100).toFixed(1);
-      col+='<div class="bar-row"><div class="bar-label" style="color:rgb('+c+')">'+CN[i]+'</div>';
+      if(p[i]<0.005)continue; // skip near-zero
+      col+='<div class="bar-row"><div class="bar-label" style="color:rgb('+c+')">'+CS[i]+'</div>';
       col+='<div class="bar-bg"><div class="bar-fill" style="width:'+pv+'%;background:rgb('+c+')"></div></div>';
       col+='<div class="bar-val">'+pv+'%</div></div>';
     }
@@ -528,6 +570,7 @@ roundSel.addEventListener('change',render);
 vm.addEventListener('change',render);
 cs.addEventListener('change',render);
 zm.addEventListener('input',render);
+mzm.addEventListener('input',render);
 render();
 </script>
 </body></html>`;
@@ -564,9 +607,7 @@ for (const roundNum of roundNums) {
 		if (!gridData) continue;
 
 		let bucket: number[][][] | null = null;
-		try { bucket = readPredictionBin(`${BIN_DIR}/pred_bucket_r${roundNum}_s${seed}.bin`).prediction; } catch {
-			try { bucket = readPredictionBin(`${BIN_DIR}/pred_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
-		}
+		try { bucket = readPredictionBin(`${BIN_DIR}/pred_bucket_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
 
 		let mlp: number[][][] | null = null;
 		try { mlp = readPredictionBin(`${BIN_DIR}/pred_mlp_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
@@ -574,16 +615,21 @@ for (const roundNum of roundNums) {
 		let sim: number[][][] | null = null;
 		try { sim = readPredictionBin(`${BIN_DIR}/pred_sim_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
 
+		let cnn: number[][][] | null = null;
+		try { cnn = readPredictionBin(`${BIN_DIR}/pred_cnn_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
+
+		// Blend = submission file (pred_r{N}_s{S}.bin)
+		let blend: number[][][] | null = null;
+		try { blend = readPredictionBin(`${BIN_DIR}/pred_r${roundNum}_s${seed}.bin`).prediction; } catch {
+			try { blend = readPredictionBin(`${BIN_DIR}/pred_blend_r${roundNum}_s${seed}.bin`).prediction; } catch { /* */ }
+		}
+
 		const gt = readGroundTruthBin(gtPath, roundNum, seed);
 
 		seeds.push({
-			round: roundNum,
-			seed,
-			W: gridData.W,
-			H: gridData.H,
-			bucket,
-			mlp,
-			sim,
+			round: roundNum, seed,
+			W: gridData.W, H: gridData.H,
+			bucket, mlp, sim, cnn, blend,
 			ground_truth: gt,
 			initial_grid: gridData.grid,
 		});
@@ -591,61 +637,60 @@ for (const roundNum of roundNums) {
 
 	if (seeds.length > 0) {
 		allRounds.push({ round: roundNum, seeds });
-		const hasBucket = seeds.some(s => s.bucket);
-		const hasMlp = seeds.some(s => s.mlp);
-		const hasSim = seeds.some(s => s.sim);
-		const hasGt = seeds.some(s => s.ground_truth);
-		console.log(`  Round ${roundNum}: ${seeds.length} seeds [bucket:${hasBucket} mlp:${hasMlp} sim:${hasSim} gt:${hasGt}]`);
+		const has = (k: keyof SeedData) => seeds.some(s => s[k]);
+		console.log(`  Round ${roundNum}: ${seeds.length} seeds [bkt:${has('bucket')} mlp:${has('mlp')} sim:${has('sim')} cnn:${has('cnn')} blend:${has('blend')} gt:${has('ground_truth')}]`);
 	}
 }
 
 const scores = computeAllScores(allRounds);
-const scoreTableHTML = generateScoreTableHTML(scores, allRounds);
+const scoreTableHTML = generateScoreTableHTML(scores);
 const html = generateHTML(allRounds, scoreTableHTML);
 const outPath = `${DATA_DIR}/preview.html`;
 await Deno.writeTextFile(outPath, html);
 
 const csvPath = `${DATA_DIR}/scores.csv`;
 await Deno.writeTextFile(csvPath, generateCSV(scores));
-console.log(`\nScores CSV: ${csvPath}`);
 
 // Print summary table to console
 console.log('');
+const models = ['bucket', 'mlp', 'sim', 'cnn', 'blend'] as const;
+const activeModels = models.filter(m => scores.some(s => s[m] !== null));
 const roundNumsForTable = [...new Set(scores.map(s => s.round))].sort((a, b) => a - b);
-const hasSim = scores.some(s => s.sim !== null);
-const colLabel = hasSim ? 'B/M/S' : 'B/M/D';
-const header = ['Seed', ...roundNumsForTable.map(r => `R${r} ${colLabel}`), `AVG ${colLabel}`];
-console.log(header.join('  '));
-console.log('-'.repeat(header.join('  ').length));
+const header = `Seed  ${roundNumsForTable.map(r => `R${r}`).join('     ')}    AVG`;
+console.log(header);
+console.log('-'.repeat(header.length + 20));
+
 const seedNums = [...new Set(scores.map(s => s.seed))].sort((a, b) => a - b);
 for (const seed of seedNums) {
-	const parts = [`S${seed}  `];
+	let line = `S${seed}    `;
 	for (const r of roundNumsForTable) {
 		const row = scores.find(s => s.round === r && s.seed === seed);
-		if (row && row.bucket !== null && row.mlp !== null) {
-			if (hasSim) {
-				parts.push(`${row.bucket!.toFixed(0)}/${row.mlp!.toFixed(0)}/${row.sim !== null ? row.sim!.toFixed(0) : '-'}`);
-			} else {
-				parts.push(`${row.bucket!.toFixed(0)}/${row.mlp!.toFixed(0)}/${row.diff! >= 0 ? '+' : ''}${row.diff!.toFixed(0)}`);
-			}
-		} else {
-			parts.push('—');
-		}
+		const vals = activeModels.map(m => row && row[m] !== null ? row[m]!.toFixed(0) : '-');
+		line += vals.join('/') + '  ';
 	}
-	const seedScores = scores.filter(s => s.seed === seed && s.bucket !== null && s.mlp !== null);
-	if (seedScores.length > 0) {
-		const ab = seedScores.reduce((a, s) => a + s.bucket!, 0) / seedScores.length;
-		const am = seedScores.reduce((a, s) => a + s.mlp!, 0) / seedScores.length;
-		if (hasSim) {
-			const simScores = seedScores.filter(s => s.sim !== null);
-			const as2 = simScores.length > 0 ? simScores.reduce((a, s) => a + s.sim!, 0) / simScores.length : 0;
-			parts.push(`${ab.toFixed(0)}/${am.toFixed(0)}/${simScores.length > 0 ? as2.toFixed(0) : '-'}`);
-		} else {
-			const ad = am - ab;
-			parts.push(`${ab.toFixed(0)}/${am.toFixed(0)}/${ad >= 0 ? '+' : ''}${ad.toFixed(0)}`);
-		}
-	}
-	console.log(parts.join('  '));
+	// Seed average
+	const avgVals = activeModels.map(m => {
+		const ss = scores.filter(s => s.seed === seed && s[m] !== null);
+		return ss.length > 0 ? (ss.reduce((a, s) => a + s[m]!, 0) / ss.length).toFixed(0) : '-';
+	});
+	line += avgVals.join('/');
+	console.log(line);
 }
 
+// Grand average
+let avgLine = 'AVG   ';
+for (const r of roundNumsForTable) {
+	const vals = activeModels.map(m => {
+		const rs = scores.filter(s => s.round === r && s[m] !== null);
+		return rs.length > 0 ? (rs.reduce((a, s) => a + s[m]!, 0) / rs.length).toFixed(0) : '-';
+	});
+	avgLine += vals.join('/') + '  ';
+}
+const grandVals = activeModels.map(m => {
+	const all = scores.filter(s => s[m] !== null);
+	return all.length > 0 ? (all.reduce((a, s) => a + s[m]!, 0) / all.length).toFixed(0) : '-';
+});
+avgLine += grandVals.join('/');
+console.log(avgLine);
+console.log(`\nModels: ${activeModels.join('/')}`);
 console.log(`\nOpen: file://${Deno.cwd()}/${outPath}`);
