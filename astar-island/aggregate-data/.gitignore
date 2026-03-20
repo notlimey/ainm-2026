@@ -2,3 +2,9 @@
 .DS_Store
 deno.lock
 node_modules
+data/analysis/
+data/initial/
+data/queries/
+data/my-rounds.json
+data/preview.html
+data/analysis-viewer.html
