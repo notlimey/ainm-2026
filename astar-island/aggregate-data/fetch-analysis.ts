@@ -100,12 +100,12 @@ async function fetchAnalysis(rounds: MyRound[]) {
 }
 
 async function fetchInitialStates(rounds: MyRound[]) {
-	const completed = rounds.filter((r) => r.status === "completed");
+	const available = rounds.filter((r) => r.status === "completed" || r.status === "active");
 
 	const initDir = `${DATA_DIR}/initial`;
 	await ensureDir(initDir);
 
-	for (const round of completed) {
+	for (const round of available) {
 		const outPath = `${initDir}/r${round.round_number}.json`;
 
 		try {
