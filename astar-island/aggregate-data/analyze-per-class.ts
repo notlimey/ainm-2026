@@ -3,51 +3,16 @@
  * Helps determine optimal per-class ensemble weights.
  */
 
+import { NUM_CLASSES, readPrediction as readPredictionBin, readGroundTruthBin as _readGT } from "./bin-io.ts";
+
 const BIN_DIR = "../simulation/data";
-const NUM_CLASSES = 6;
 const CLASS_NAMES = ["Empty/Ocean", "Settlement", "Port", "Ruin", "Forest", "Mountain"];
 
-function readPredictionBin(path: string) {
-	const data = Deno.readFileSync(path);
-	const view = new DataView(data.buffer);
-	const round = view.getInt32(6, true);
-	const seed = view.getInt32(10, true);
-	const W = view.getInt32(14, true);
-	const H = view.getInt32(18, true);
-	const prediction: number[][][] = [];
-	let offset = 22;
-	for (let y = 0; y < H; y++) {
-		const row: number[][] = [];
-		for (let x = 0; x < W; x++) {
-			const cell: number[] = [];
-			for (let c = 0; c < NUM_CLASSES; c++) { cell.push(view.getFloat32(offset, true)); offset += 4; }
-			row.push(cell);
-		}
-		prediction.push(row);
-	}
-	return { round, seed, W, H, prediction };
-}
-
+// Wrapper: readGroundTruthBin returns { W, H, gt } here (needs grid dimensions)
 function readGroundTruthBin(path: string, wantRound: number, wantSeed: number) {
-	try {
-		const data = Deno.readFileSync(path);
-		const view = new DataView(data.buffer);
-		let offset = 6;
-		const count = view.getUint32(offset, true); offset += 4;
-		for (let i = 0; i < count; i++) {
-			const round = view.getInt32(offset, true); offset += 4;
-			const seed = view.getInt32(offset, true); offset += 4;
-			const W = view.getInt32(offset, true); offset += 4;
-			const H = view.getInt32(offset, true); offset += 4;
-			if (round === wantRound && seed === wantSeed) {
-				const gt: number[][][] = [];
-				for (let y = 0; y < H; y++) { const row: number[][] = []; for (let x = 0; x < W; x++) { const cell: number[] = []; for (let c = 0; c < NUM_CLASSES; c++) { cell.push(view.getFloat32(offset, true)); offset += 4; } row.push(cell); } gt.push(row); }
-				return { W, H, gt };
-			}
-			offset += W * H * NUM_CLASSES * 4;
-		}
-	} catch { /* */ }
-	return null;
+	const gt = _readGT(path, wantRound, wantSeed);
+	if (!gt) return null;
+	return { W: gt[0]?.length ?? 40, H: gt.length, gt };
 }
 
 // Per-class weighted KL: for each cell, weight by ground truth entropy,

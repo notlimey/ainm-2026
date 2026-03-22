@@ -1,5 +1,6 @@
 import "@std/dotenv/load";
 import { NMAIAstarIsland } from "./client.ts";
+import { NUM_CLASSES, TERRAIN_MOUNTAIN, TERRAIN_OCEAN, terrainToClass, entropy, readPrediction, writePrediction, readGridBin } from "./bin-io.ts";
 
 /**
  * Smart query + blend pipeline for a round.
@@ -7,79 +8,39 @@ import { NMAIAstarIsland } from "./client.ts";
  * Strategy:
  *   - 10 queries per seed (50 total / 5 seeds)
  *   - First 3-4 queries: tile viewports across high-entropy areas for coverage
- *   - Remaining 6-7 queries: re-query the highest-entropy viewports for better empirical estimates
+ *   - Remaining queries: allocated proportional to viewport entropy score
  *   - Blend: for cells with N observations, mix empirical distribution with model prior
+ *     using per-class alphas (rare classes trusted faster)
  *   - Store all raw query results to data/queries/r{N}/ for future reuse
  *
  * Usage:
- *   deno run -A query-round.ts <round_number> [--queries-per-seed 10] [--viewport 15] [--dry-run] [--model bucket|mlp|ensemble]
+ *   deno run -A query-round.ts <round_number> [--queries-per-seed 10] [--viewport 10] [--dry-run] [--model bucket|mlp|sim|blend|ensemble] [--smart-alloc]
  */
 
 const api = new NMAIAstarIsland();
 const BIN_DIR = "../simulation/data";
 const DATA_DIR = "data";
-const NUM_CLASSES = 6;
 
-// ── Helpers ──
+// ── Model disagreement ──
 
-function terrainToClass(code: number): number {
-	switch (code) {
-		case 1: return 1;
-		case 2: return 2;
-		case 3: return 3;
-		case 4: return 4;
-		case 5: return 5;
-		default: return 0;
-	}
-}
-
-function entropy(probs: number[]): number {
-	let h = 0;
-	for (const p of probs) if (p > 0) h -= p * Math.log2(p);
-	return h;
-}
-
-function readPrediction(path: string) {
-	const data = Deno.readFileSync(path);
-	const view = new DataView(data.buffer);
-	const magic = String.fromCharCode(data[0], data[1], data[2], data[3]);
-	if (magic !== "ASTP") throw new Error(`Bad magic: ${magic}`);
-	const round = view.getInt32(6, true);
-	const seed = view.getInt32(10, true);
-	const W = view.getInt32(14, true);
-	const H = view.getInt32(18, true);
-	const prediction: number[][][] = [];
-	let offset = 22;
-	for (let y = 0; y < H; y++) {
-		const row: number[][] = [];
-		for (let x = 0; x < W; x++) {
-			const cell: number[] = [];
-			for (let c = 0; c < NUM_CLASSES; c++) { cell.push(view.getFloat32(offset, true)); offset += 4; }
-			row.push(cell);
-		}
-		prediction.push(row);
-	}
-	return { round, seed, W, H, prediction };
-}
-
-function writePrediction(path: string, round: number, seed: number, W: number, H: number, prediction: number[][][]) {
-	const buf = new ArrayBuffer(22 + H * W * NUM_CLASSES * 4);
-	const view = new DataView(buf);
-	const u8 = new Uint8Array(buf);
-	u8.set([0x41, 0x53, 0x54, 0x50]); // "ASTP"
-	view.setUint16(4, 1, true);
-	view.setInt32(6, round, true);
-	view.setInt32(10, seed, true);
-	view.setInt32(14, W, true);
-	view.setInt32(18, H, true);
-	let offset = 22;
-	for (let y = 0; y < H; y++)
-		for (let x = 0; x < W; x++)
-			for (let c = 0; c < NUM_CLASSES; c++) {
-				view.setFloat32(offset, prediction[y][x][c], true);
-				offset += 4;
+function modelDisagreement(models: number[][][][], x: number, y: number): number {
+	// Average pairwise symmetric KL divergence between all model pairs
+	let totalKL = 0;
+	let pairs = 0;
+	for (let i = 0; i < models.length; i++) {
+		for (let j = i + 1; j < models.length; j++) {
+			const p = models[i][y][x];
+			const q = models[j][y][x];
+			let kl = 0;
+			for (let c = 0; c < 6; c++) {
+				if (p[c] > 0.001) kl += p[c] * Math.log(p[c] / Math.max(q[c], 0.001));
+				if (q[c] > 0.001) kl += q[c] * Math.log(q[c] / Math.max(p[c], 0.001));
 			}
-	Deno.writeFileSync(path, new Uint8Array(buf));
+			totalKL += kl / 2; // symmetric KL = average of both directions
+			pairs++;
+		}
+	}
+	return pairs > 0 ? totalKL / pairs : 0;
 }
 
 // ── Viewport placement ──
@@ -89,7 +50,15 @@ function findBestViewports(
 	W: number, H: number,
 	vpSize: number,
 	count: number,
+	otherModels?: number[][][][], // additional model predictions for disagreement scoring
 ): { x: number; y: number; entropyScore: number }[] {
+	// Collect all models (primary + others) for disagreement computation
+	const allModels: number[][][][] = [prediction];
+	if (otherModels) {
+		for (const m of otherModels) allModels.push(m);
+	}
+	const useDisagreement = allModels.length >= 2;
+
 	// Build entropy map
 	const entropyMap: number[][] = [];
 	for (let y = 0; y < H; y++) {
@@ -99,14 +68,43 @@ function findBestViewports(
 		}
 	}
 
+	// Build disagreement map (if multiple models available)
+	const disagreementMap: number[][] = [];
+	let maxDisagreement = 0;
+	if (useDisagreement) {
+		for (let y = 0; y < H; y++) {
+			disagreementMap.push([]);
+			for (let x = 0; x < W; x++) {
+				const d = modelDisagreement(allModels, x, y);
+				disagreementMap[y].push(d);
+				if (d > maxDisagreement) maxDisagreement = d;
+			}
+		}
+	}
+
+	// Compute max entropy for normalization when combining with disagreement
+	let maxEntropy = 0;
+	for (let y = 0; y < H; y++)
+		for (let x = 0; x < W; x++)
+			if (entropyMap[y][x] > maxEntropy) maxEntropy = entropyMap[y][x];
+
 	// Score every possible viewport position
 	const candidates: { x: number; y: number; score: number }[] = [];
 	for (let vy = 0; vy <= H - vpSize; vy++) {
 		for (let vx = 0; vx <= W - vpSize; vx++) {
 			let score = 0;
-			for (let dy = 0; dy < vpSize; dy++)
-				for (let dx = 0; dx < vpSize; dx++)
-					score += entropyMap[vy + dy][vx + dx];
+			for (let dy = 0; dy < vpSize; dy++) {
+				for (let dx = 0; dx < vpSize; dx++) {
+					if (useDisagreement && maxEntropy > 0 && maxDisagreement > 0) {
+						// Combine normalized entropy and disagreement (0.5 / 0.5 weighting)
+						const normEntropy = entropyMap[vy + dy][vx + dx] / maxEntropy;
+						const normDisagreement = disagreementMap[vy + dy][vx + dx] / maxDisagreement;
+						score += 0.5 * normEntropy + 0.5 * normDisagreement;
+					} else {
+						score += entropyMap[vy + dy][vx + dx];
+					}
+				}
+			}
 			candidates.push({ x: vx, y: vy, score });
 		}
 	}
@@ -167,10 +165,20 @@ function blendPredictions(
 	sampleCounts: number[][],
 	classCounts: number[][][],
 	W: number, H: number,
+	initialGrid: number[][] | null,
 ): { blended: number[][][]; refinedCells: number; avgSamples: number } {
 	const blended = modelPred.map(row => row.map(cell => [...cell]));
 	let refinedCells = 0;
 	let totalSamples = 0;
+
+	// Fixed Bayesian blending parameters.
+	// Tested old(3/5,0.85), current(8/12,0.70), moderate(5/8,0.80) on R7-R10:
+	// Current gives best average (+5.6 on good rounds like R9, -2.6 on bad rounds).
+	// Adaptive (entropy/disagreement) was tested but models share systematic biases,
+	// so disagreement doesn't differentiate good vs bad rounds.
+	const pseudoRare = 8;    // for settlement/port/ruin (classes 1-3)
+	const pseudoCommon = 12;  // for empty/forest/mountain
+	const alphaCap = 0.70;
 
 	for (let y = 0; y < H; y++) {
 		for (let x = 0; x < W; x++) {
@@ -179,17 +187,25 @@ function blendPredictions(
 
 			const empirical: number[] = classCounts[y][x].map(c => c / n);
 
-			// Bayesian-style blending: more samples → trust empirical more
-			// With 1 sample: alpha=0.17, 5: 0.50, 10: 0.67, 20: 0.80
-			const alpha = Math.min(n / (n + 5), 0.85);
-
-			for (let c = 0; c < NUM_CLASSES; c++)
+			for (let c = 0; c < NUM_CLASSES; c++) {
+				const pseudoCount = (c >= 1 && c <= 3) ? pseudoRare : pseudoCommon;
+				const alpha = Math.min(n / (n + pseudoCount), alphaCap);
 				blended[y][x][c] = (1 - alpha) * modelPred[y][x][c] + alpha * empirical[c];
+			}
 
-			// Floor + renormalize
+			// Smart floor: only floor reachable classes (matches simulate.cpp logic)
+			const terrain = initialGrid ? initialGrid[y][x] : -1;
 			let total = 0;
 			for (let c = 0; c < NUM_CLASSES; c++) {
-				if (blended[y][x][c] < 0.005) blended[y][x][c] = 0.005;
+				const reachable = terrain === TERRAIN_MOUNTAIN ? (c === 5)
+					: terrain === TERRAIN_OCEAN ? (c === 0)
+					: terrain >= 0 ? (c !== 5) // land: all except mountain
+					: true; // no grid available: floor everything (old behavior)
+				if (reachable) {
+					if (blended[y][x][c] < 0.003) blended[y][x][c] = 0.003;
+				} else {
+					blended[y][x][c] = 0.0;
+				}
 				total += blended[y][x][c];
 			}
 			for (let c = 0; c < NUM_CLASSES; c++) blended[y][x][c] /= total;
@@ -289,21 +305,38 @@ async function main() {
 	if (isNaN(roundNum)) {
 		console.log("Usage: query-round.ts <round_number> [options]");
 		console.log("  --queries-per-seed N   queries per seed (default: 10)");
-		console.log("  --viewport N           viewport size (default: 15)");
-		console.log("  --model TYPE           bucket|mlp|sim|ensemble (default: sim)");
+		console.log("  --viewport N           viewport size (default: 10)");
+		console.log("  --model TYPE           bucket|mlp|sim|blend|ensemble (default: auto-detect)");
 		console.log("  --dry-run              skip API calls, use stored queries only");
 		console.log("  --blend-only           no queries, just blend stored queries with models");
 		console.log("  --seeds 0,1,2,3,4      which seeds to process (default: all)");
+		console.log("  --smart-alloc          allocate queries proportional to per-seed entropy");
 		Deno.exit(1);
 	}
 
 	const queriesPerSeed = parseInt(args.find((_, i) => args[i - 1] === "--queries-per-seed") || "10");
-	const vpSize = parseInt(args.find((_, i) => args[i - 1] === "--viewport") || "15");
-	const modelType = args.find((_, i) => args[i - 1] === "--model") || "sim";
+	const vpSize = parseInt(args.find((_, i) => args[i - 1] === "--viewport") || "10");
+	const explicitModel = args.find((_, i) => args[i - 1] === "--model");
 	const dryRun = args.includes("--dry-run");
 	const blendOnly = args.includes("--blend-only");
+	const smartAlloc = args.includes("--smart-alloc");
 	const seedArg = args.find((_, i) => args[i - 1] === "--seeds");
 	const seeds = seedArg ? seedArg.split(",").map(Number) : [0, 1, 2, 3, 4];
+
+	// Auto-detect model type: try blend first, fall back to sim
+	let modelType = explicitModel || "sim";
+	if (!explicitModel) {
+		// Check if blend files exist for seed 0
+		try {
+			Deno.statSync(`${BIN_DIR}/pred_blend_r${roundNum}_s0.bin`);
+			modelType = "blend";
+			console.log(`  Auto-detected blend predictions, using --model blend`);
+		} catch {
+			// Also check pred_r (submission file) as a blend proxy
+			// Fall back to sim
+			modelType = "sim";
+		}
+	}
 
 	// Load round info
 	const roundsData = JSON.parse(await Deno.readTextFile(`${DATA_DIR}/my-rounds.json`));
@@ -316,7 +349,81 @@ async function main() {
 	console.log(`  Seeds: ${seeds.join(", ")}`);
 	if (dryRun) console.log(`  *** DRY RUN — no API calls ***`);
 	if (blendOnly) console.log(`  *** BLEND ONLY — using stored queries ***`);
+	if (smartAlloc) console.log(`  *** SMART ALLOC — proportional query allocation ***`);
 	console.log();
+
+	// Smart allocation: compute per-seed query budgets proportional to total entropy
+	const perSeedQueries: Map<number, number> = new Map();
+	const totalBudget = queriesPerSeed * seeds.length;
+	if (smartAlloc && seeds.length > 1) {
+		const seedEntropies: Map<number, number> = new Map();
+		for (const seedIdx of seeds) {
+			let pred: number[][][] | null = null;
+			// Try to load model prediction for entropy computation
+			for (const prefix of ["pred_blend_", "pred_sim_", "pred_r"]) {
+				try {
+					const p = readPrediction(`${BIN_DIR}/${prefix}r${roundNum}_s${seedIdx}.bin`);
+					pred = p.prediction;
+					break;
+				} catch { /* try next */ }
+			}
+			if (!pred) {
+				seedEntropies.set(seedIdx, 1.0); // fallback
+				continue;
+			}
+			let totalEntropy = 0;
+			for (let y = 0; y < pred.length; y++)
+				for (let x = 0; x < pred[y].length; x++)
+					totalEntropy += entropy(pred[y][x]);
+			seedEntropies.set(seedIdx, totalEntropy);
+		}
+		const totalEntropy = Array.from(seedEntropies.values()).reduce((a, b) => a + b, 0);
+		let allocated = 0;
+		const minPerSeed = 5;
+		const maxPerSeed = 15;
+		// First pass: allocate proportionally
+		const rawAlloc: Map<number, number> = new Map();
+		for (const seedIdx of seeds) {
+			const share = totalEntropy > 0
+				? Math.round(totalBudget * (seedEntropies.get(seedIdx)! / totalEntropy))
+				: queriesPerSeed;
+			rawAlloc.set(seedIdx, Math.max(minPerSeed, Math.min(maxPerSeed, share)));
+		}
+		// Second pass: adjust to match total budget
+		allocated = Array.from(rawAlloc.values()).reduce((a, b) => a + b, 0);
+		// Distribute remainder/deficit to highest/lowest entropy seeds
+		const sortedSeeds = [...seeds].sort((a, b) =>
+			(seedEntropies.get(b) || 0) - (seedEntropies.get(a) || 0)
+		);
+		let idx = 0;
+		while (allocated < totalBudget) {
+			const s = sortedSeeds[idx % sortedSeeds.length];
+			if (rawAlloc.get(s)! < maxPerSeed) {
+				rawAlloc.set(s, rawAlloc.get(s)! + 1);
+				allocated++;
+			}
+			idx++;
+			if (idx > totalBudget) break; // safety
+		}
+		idx = sortedSeeds.length - 1;
+		while (allocated > totalBudget) {
+			const s = sortedSeeds[idx >= 0 ? idx : 0];
+			if (rawAlloc.get(s)! > minPerSeed) {
+				rawAlloc.set(s, rawAlloc.get(s)! - 1);
+				allocated--;
+			}
+			idx--;
+			if (idx < -sortedSeeds.length) break; // safety
+		}
+		for (const seedIdx of seeds) {
+			perSeedQueries.set(seedIdx, rawAlloc.get(seedIdx)!);
+		}
+		console.log(`  Smart alloc: ${seeds.map(s => `S${s}=${perSeedQueries.get(s)}`).join(", ")} (total=${totalBudget})`);
+	} else {
+		for (const seedIdx of seeds) {
+			perSeedQueries.set(seedIdx, queriesPerSeed);
+		}
+	}
 
 	const summaryRows: string[] = [];
 
@@ -333,14 +440,27 @@ async function main() {
 		let bucketPred: ReturnType<typeof readPrediction> | null = null;
 		let mlpPred: ReturnType<typeof readPrediction> | null = null;
 		let simPred: ReturnType<typeof readPrediction> | null = null;
+		let cnnPred: ReturnType<typeof readPrediction> | null = null;
+		let blendPredFile: ReturnType<typeof readPrediction> | null = null;
 		let W = 40, H = 40;
+
+		// Load initial grid for smart flooring
+		const gridData = readGridBin(`${BIN_DIR}/grids.bin`, roundNum, seedIdx);
+		const initialGrid = gridData ? gridData.grid : null;
 
 		try { bucketPred = readPrediction(bucketPath); W = bucketPred.W; H = bucketPred.H; console.log(`  Loaded bucket: ${bucketPath}`); } catch { console.log(`  No bucket prediction at ${bucketPath}`); }
 		try { mlpPred = readPrediction(mlpPath); W = mlpPred.W; H = mlpPred.H; console.log(`  Loaded MLP: ${mlpPath}`); } catch { console.log(`  No MLP prediction at ${mlpPath}`); }
 		const simPath = `${BIN_DIR}/pred_sim_r${roundNum}_s${seedIdx}.bin`;
 		try { simPred = readPrediction(simPath); W = simPred.W; H = simPred.H; console.log(`  Loaded sim: ${simPath}`); } catch { console.log(`  No sim prediction at ${simPath}`); }
+		const cnnPath = `${BIN_DIR}/pred_cnn_r${roundNum}_s${seedIdx}.bin`;
+		try { cnnPred = readPrediction(cnnPath); W = cnnPred.W; H = cnnPred.H; console.log(`  Loaded CNN: ${cnnPath}`); } catch { /* no CNN prediction */ }
+		const blendFilePath = `${BIN_DIR}/pred_blend_r${roundNum}_s${seedIdx}.bin`;
+		try { blendPredFile = readPrediction(blendFilePath); W = blendPredFile.W; H = blendPredFile.H; console.log(`  Loaded blend: ${blendFilePath}`); } catch { /* no blend file yet */ }
 
-		if (modelType === "sim" && simPred) {
+		if (modelType === "blend" && blendPredFile) {
+			console.log(`  Using blend (per-class optimized ensemble)`);
+			modelPred = blendPredFile.prediction;
+		} else if (modelType === "sim" && simPred) {
 			console.log(`  Using sim (calibrated simulator)`);
 			modelPred = simPred.prediction;
 		} else if (modelType === "ensemble" && bucketPred && mlpPred) {
@@ -348,6 +468,10 @@ async function main() {
 			modelPred = ensemblePredictions(bucketPred.prediction, mlpPred.prediction, W, H);
 		} else if (modelType === "mlp" && mlpPred) {
 			modelPred = mlpPred.prediction;
+		} else if (modelType === "blend" && simPred) {
+			// blend requested but no blend file — fall back to sim
+			console.log(`  No blend file, falling back to sim model`);
+			modelPred = simPred.prediction;
 		} else if (simPred) {
 			modelPred = simPred.prediction;
 			if (modelType !== "sim") console.log(`  Falling back to sim model`);
@@ -365,26 +489,56 @@ async function main() {
 		const stored = await loadStoredQueries(roundNum, seedIdx);
 		console.log(`  Stored queries: ${stored.length}`);
 
-		// Plan viewports based on model prediction entropy
-		const coverageVps = findBestViewports(modelPred, W, H, vpSize, Math.ceil(queriesPerSeed / 3));
+		// Collect all available model predictions (excluding the primary) for disagreement scoring
+		const otherModels: number[][][][] = [];
+		const allPredSources = [
+			{ pred: bucketPred, name: "bucket" },
+			{ pred: mlpPred, name: "mlp" },
+			{ pred: simPred, name: "sim" },
+			{ pred: cnnPred, name: "cnn" },
+		];
+		for (const { pred } of allPredSources) {
+			if (pred && pred.prediction !== modelPred) {
+				otherModels.push(pred.prediction);
+			}
+		}
+		if (otherModels.length > 0) {
+			console.log(`  Viewport targeting: entropy + disagreement (${otherModels.length + 1} models)`);
+		}
+
+		// Plan viewports: request enough for full budget so extras use distinct locations
+		const seedBudgetEst = perSeedQueries.get(seedIdx) || queriesPerSeed;
+		const coverageVps = findBestViewports(modelPred, W, H, vpSize, Math.max(seedBudgetEst, Math.ceil(queriesPerSeed / 3)), otherModels.length > 0 ? otherModels : undefined);
 
 		let newQueries: StoredQuery[] = [];
 
 		if (!blendOnly && !dryRun && roundInfo.status === "active") {
 			const budget = await api.getBudget();
 			const remaining = budget.queries_max - budget.queries_used;
-			const toUse = Math.min(queriesPerSeed, remaining);
+			const seedBudget = perSeedQueries.get(seedIdx) || queriesPerSeed;
+			const toUse = Math.min(seedBudget, remaining);
 
 			if (toUse <= 0) {
 				console.log(`  No queries remaining!`);
 			} else {
 				console.log(`  Budget: ${budget.queries_used}/${budget.queries_max} used, will use ${toUse}`);
 
-				// Build query plan:
-				// First round through coverage viewports, then repeat for density
+				// Build query plan: use distinct viewports first (each covers different area),
+				// only repeat high-entropy viewports after exhausting distinct locations
 				const queryPlan: { x: number; y: number }[] = [];
-				for (let q = 0; q < toUse; q++) {
-					queryPlan.push(coverageVps[q % coverageVps.length]);
+				// Phase 1: one query per distinct viewport (best coverage)
+				for (let q = 0; q < Math.min(toUse, coverageVps.length); q++) {
+					queryPlan.push(coverageVps[q]);
+				}
+				// Phase 2: if we still need more, repeat highest-entropy viewports
+				if (toUse > coverageVps.length && coverageVps.length > 0) {
+					let remaining = toUse - coverageVps.length;
+					let idx = 0; // coverageVps is sorted by entropy, so idx=0 is highest
+					while (remaining > 0) {
+						queryPlan.push(coverageVps[idx % coverageVps.length]);
+						idx++;
+						remaining--;
+					}
 				}
 
 				for (let q = 0; q < queryPlan.length; q++) {
@@ -429,7 +583,7 @@ async function main() {
 
 		// Accumulate observations and blend
 		const { sampleCounts, classCounts } = accumulateQueries(allQueries, W, H);
-		const { blended, refinedCells, avgSamples } = blendPredictions(modelPred, sampleCounts, classCounts, W, H);
+		const { blended, refinedCells, avgSamples } = blendPredictions(modelPred, sampleCounts, classCounts, W, H, initialGrid);
 
 		console.log(`  Blended: ${refinedCells} cells refined, avg ${avgSamples.toFixed(1)} samples/cell`);
 

@@ -1,0 +1,155 @@
+[2026-03-21 22:46:56] ============================================
+[2026-03-21 22:46:56]   Watch Rounds — Started
+[2026-03-21 22:46:56]   Interval: 120 min
+[2026-03-21 22:46:56]   Rollouts: 1000
+[2026-03-21 22:46:56]   Queries: 10/seed
+[2026-03-21 22:46:56] ============================================
+[2026-03-21 22:46:56] ── Checking for active round ──
+[2026-03-21 22:47:01]   Active: Round 18 | 121 min left | 5/5 seeds | 50/50 queries | state: new
+[2026-03-21 22:47:01]   >>> NEW ROUND 18 — running full pipeline
+[2026-03-21 22:47:15] ============================================
+[2026-03-21 22:47:15]   Watch Rounds — Started
+[2026-03-21 22:47:15]   Interval: 120 min
+[2026-03-21 22:47:15]   Rollouts: 1000
+[2026-03-21 22:47:15]   Queries: 10/seed
+[2026-03-21 22:47:15] ============================================
+[2026-03-21 22:47:15] ── Checking for active round ──
+[2026-03-21 22:47:16]   Active: Round 18 | 121 min left | 5/5 seeds | 50/50 queries | state: new
+[2026-03-21 22:47:16]   >>> NEW ROUND 18 — running full pipeline
+[2026-03-21 23:10:04]   >>> Round 18 submitted successfully!
+[2026-03-21 23:10:04]   Fetching ground truth for completed round 17
+[2026-03-21 23:10:07]   GT for round 17 fetched & converted
+[2026-03-21 23:10:07]   Next check in 120 min
+[2026-03-21 23:10:16]   >>> Round 18 submitted successfully!
+[2026-03-21 23:10:16]   Fetching ground truth for completed round 17
+[2026-03-21 23:10:18]   GT for round 17 fetched & converted
+[2026-03-21 23:10:18]   Next check in 120 min
+[2026-03-22 01:10:07] ── Checking for active round ──
+[2026-03-22 01:10:08]   Active: Round 19 | 156 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-22 01:10:08]   >>> NEW ROUND 19 — running full pipeline
+[2026-03-22 01:10:18] ── Checking for active round ──
+[2026-03-22 01:10:19]   Active: Round 19 | 156 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-22 01:10:19]   >>> NEW ROUND 19 — running full pipeline
+[2026-03-22 01:34:30]   >>> Round 19 submitted successfully!
+[2026-03-22 01:34:30]   Fetching ground truth for completed round 18
+[2026-03-22 01:34:31]   GT for round 18 fetched & converted
+[2026-03-22 01:34:31]   Next check in 120 min
+[2026-03-22 01:34:36]   >>> Round 19 submitted successfully!
+[2026-03-22 01:34:36]   Fetching ground truth for completed round 18
+[2026-03-22 01:34:37]   GT for round 18 fetched & converted
+[2026-03-22 01:34:37]   Next check in 120 min
+[2026-03-22 03:34:31] ── Checking for active round ──
+[2026-03-22 03:34:32]   Active: Round 19 | 11 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:34:32]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:34:32]   Fetching ground truth for completed round 18
+[2026-03-22 03:34:33]   GT for round 18 fetched & converted
+[2026-03-22 03:34:33]   Round closing soon! Next check in 5 min
+[2026-03-22 03:34:37] ── Checking for active round ──
+[2026-03-22 03:34:38]   Active: Round 19 | 11 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:34:38]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:34:38]   Fetching ground truth for completed round 18
+[2026-03-22 03:34:40]   GT for round 18 fetched & converted
+[2026-03-22 03:34:40]   Round closing soon! Next check in 5 min
+[2026-03-22 03:39:33] ── Checking for active round ──
+[2026-03-22 03:39:34]   Active: Round 19 | 6 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:39:34]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:39:34]   Fetching ground truth for completed round 18
+[2026-03-22 03:39:35]   GT for round 18 fetched & converted
+[2026-03-22 03:39:35]   Round closing soon! Next check in 5 min
+[2026-03-22 03:39:40] ── Checking for active round ──
+[2026-03-22 03:39:40]   Active: Round 19 | 6 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:39:40]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:39:40]   Fetching ground truth for completed round 18
+[2026-03-22 03:39:41]   GT for round 18 fetched & converted
+[2026-03-22 03:39:41]   Round closing soon! Next check in 5 min
+[2026-03-22 03:44:35] ── Checking for active round ──
+[2026-03-22 03:44:35]   Active: Round 19 | 1 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:44:35]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:44:35]   Fetching ground truth for completed round 18
+[2026-03-22 03:44:36]   GT for round 18 fetched & converted
+[2026-03-22 03:44:36]   Round closing soon! Next check in 5 min
+[2026-03-22 03:44:41] ── Checking for active round ──
+[2026-03-22 03:44:42]   Active: Round 19 | 1 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:44:42]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:44:42]   Fetching ground truth for completed round 18
+[2026-03-22 03:44:43]   GT for round 18 fetched & converted
+[2026-03-22 03:44:43]   Round closing soon! Next check in 5 min
+[2026-03-22 03:49:36] ── Checking for active round ──
+[2026-03-22 03:49:38]   Active: Round 19 | 0 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:49:38]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:49:38]   Fetching ground truth for completed round 18
+[2026-03-22 03:49:39]   GT for round 18 fetched & converted
+[2026-03-22 03:49:39]   Next check in 120 min
+[2026-03-22 03:49:43] ── Checking for active round ──
+[2026-03-22 03:49:43]   Active: Round 19 | 0 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 03:49:43]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 03:49:43]   Fetching ground truth for completed round 18
+[2026-03-22 03:49:44]   GT for round 18 fetched & converted
+[2026-03-22 03:49:44]   Next check in 120 min
+[2026-03-22 05:49:39] ── Checking for active round ──
+[2026-03-22 05:49:39]   Active: Round 20 | 57 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-22 05:49:39]   >>> NEW ROUND 20 — running full pipeline
+[2026-03-22 05:49:44] ── Checking for active round ──
+[2026-03-22 05:49:45]   Active: Round 20 | 57 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-22 05:49:45]   >>> NEW ROUND 20 — running full pipeline
+[2026-03-22 06:15:08]   >>> Round 20 submitted successfully!
+[2026-03-22 06:15:08]   Fetching ground truth for completed round 19
+[2026-03-22 06:15:08]   >>> Round 20 submitted successfully!
+[2026-03-22 06:15:08]   Fetching ground truth for completed round 19
+[2026-03-22 06:15:09]   GT for round 19 fetched & converted
+[2026-03-22 06:15:09]   Next check in 28 min (round closes in 57 min)
+[2026-03-22 06:15:09]   GT for round 19 fetched & converted
+[2026-03-22 06:15:09]   Next check in 28 min (round closes in 57 min)
+[2026-03-22 06:43:09] ── Checking for active round ──
+[2026-03-22 06:43:09] ── Checking for active round ──
+[2026-03-22 06:43:09]   Active: Round 20 | 3 min left | 4/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 06:43:09]   Active: Round 20 | 3 min left | 4/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 06:43:09]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 06:43:09]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 06:43:09]   Fetching ground truth for completed round 19
+[2026-03-22 06:43:09]   Fetching ground truth for completed round 19
+[2026-03-22 06:43:11]   GT for round 19 fetched & converted
+[2026-03-22 06:43:11]   Round closing soon! Next check in 5 min
+[2026-03-22 06:43:11]   GT for round 19 fetched & converted
+[2026-03-22 06:43:11]   Round closing soon! Next check in 5 min
+[2026-03-22 06:48:11] ── Checking for active round ──
+[2026-03-22 06:48:11] ── Checking for active round ──
+[2026-03-22 06:48:11]   Active: Round 20 | 0 min left | 4/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 06:48:11]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 06:48:11]   Fetching ground truth for completed round 19
+[2026-03-22 06:48:11]   Active: Round 20 | 0 min left | 4/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 06:48:11]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 06:48:11]   Fetching ground truth for completed round 19
+mv: .watch_state.tmp: No such file or directory
+[2026-03-22 06:48:13]   GT for round 19 fetched & converted
+[2026-03-22 06:48:13]   Next check in 120 min
+[2026-03-22 08:48:13] ── Checking for active round ──
+[2026-03-22 08:48:13]   Active: Round 21 | 60 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-22 08:48:13]   >>> NEW ROUND 21 — running full pipeline
+[2026-03-22 09:04:29]   >>> Round 21 submitted successfully!
+[2026-03-22 09:04:29]   Fetching ground truth for completed round 20
+[2026-03-22 09:04:33]   GT for round 20 fetched & converted
+[2026-03-22 09:04:33]   Next check in 30 min (round closes in 60 min)
+[2026-03-22 09:34:33] ── Checking for active round ──
+[2026-03-22 09:34:34]   Active: Round 21 | 14 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 09:34:34]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 09:34:34]   Fetching ground truth for completed round 20
+[2026-03-22 09:34:36]   GT for round 20 fetched & converted
+[2026-03-22 09:34:36]   Round closing soon! Next check in 5 min
+[2026-03-22 09:39:36] ── Checking for active round ──
+[2026-03-22 09:39:38]   Active: Round 21 | 9 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 09:39:38]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 09:39:38]   Fetching ground truth for completed round 20
+[2026-03-22 09:39:39]   GT for round 20 fetched & converted
+[2026-03-22 09:39:39]   Round closing soon! Next check in 5 min
+[2026-03-22 09:44:39] ── Checking for active round ──
+[2026-03-22 09:44:42]   Active: Round 21 | 4 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 09:44:42]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 09:44:42]   Fetching ground truth for completed round 20
+[2026-03-22 09:44:46]   GT for round 20 fetched & converted
+[2026-03-22 09:44:46]   Round closing soon! Next check in 5 min
+[2026-03-22 09:49:46] ── Checking for active round ──
+[2026-03-22 09:49:47]   No active round
+[2026-03-22 09:49:47]   Fetching ground truth for completed round 20
+[2026-03-22 09:49:49]   GT for round 20 fetched & converted
+[2026-03-22 09:49:49]   Next check in 120 min

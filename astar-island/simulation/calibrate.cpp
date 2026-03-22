@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <random>
 #include <numeric>
+#include <set>
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -180,6 +181,16 @@ struct SimWorld {
     std::vector<SimSettlement> settlements;
     std::mt19937 rng;
     std::vector<std::vector<int>> settle_map;
+    std::set<std::pair<int,int>> war_pairs;
+
+    void mark_war(int fa, int fb) {
+        if (fa == fb) return;
+        war_pairs.insert({std::min(fa,fb), std::max(fa,fb)});
+    }
+    bool at_war(int fa, int fb) const {
+        if (fa == fb) return false;
+        return war_pairs.count({std::min(fa,fb), std::max(fa,fb)}) > 0;
+    }
 
     void rebuild_settle_map() {
         settle_map.assign(H, std::vector<int>(W, -1));
@@ -334,6 +345,7 @@ void phase_conflict(SimWorld& w, const SimParams& p) {
         if (targets.empty()) continue;
         int tidx = targets[w.rng() % targets.size()];
         auto& target = w.settlements[tidx];
+        w.mark_war(s.owner_id, target.owner_id);
         float attack = s.population * (1.0f + 0.2f * s.tech);
         float defend = target.defense * target.population;
         float roll = 0.5f + w.randf();
@@ -354,6 +366,7 @@ void phase_trade(SimWorld& w, const SimParams& p) {
         for (int j = i + 1; j < (int)w.settlements.size(); j++) {
             auto& b = w.settlements[j];
             if (!b.alive || !b.has_port) continue;
+            if (w.at_war(a.owner_id, b.owner_id)) continue;
             float dist = sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
             if (dist > p.trade_range) continue;
             a.food += p.trade_food; b.food += p.trade_food;
@@ -440,6 +453,7 @@ void phase_environment(SimWorld& w, const SimParams& p) {
 
 void simulate_one(SimWorld& w, const SimParams& p) {
     for (int year = 0; year < 50; year++) {
+        w.war_pairs.clear();
         phase_growth(w, p);
         phase_conflict(w, p);
         phase_trade(w, p);
@@ -452,33 +466,66 @@ void simulate_one(SimWorld& w, const SimParams& p) {
 
 // ─── Monte Carlo (returns weighted KL, lower is better) ─────────────────────
 
+// Lightweight jitter for calibration — matches simulate.cpp's jitter_params
+SimParams jitter_params_cal(const SimParams& base, std::mt19937& rng, float scale = 0.08f) {
+    SimParams p = base;
+    auto jit = [&](float val, float lo, float hi) -> float {
+        float noise = std::normal_distribution<float>(0.0f, scale * (hi - lo))(rng);
+        return std::max(lo, std::min(hi, val + noise));
+    };
+    p.expansion_pop      = jit(p.expansion_pop, 0.5f, 4.0f);
+    p.expansion_prob     = jit(p.expansion_prob, 0.05f, 0.8f);
+    p.growth_rate        = jit(p.growth_rate, 0.02f, 0.25f);
+    p.growth_threshold   = jit(p.growth_threshold, 0.1f, 0.8f);
+    p.food_per_forest    = jit(p.food_per_forest, 0.02f, 0.4f);
+    p.food_per_plains    = jit(p.food_per_plains, 0.01f, 0.15f);
+    p.raid_prob_base     = jit(p.raid_prob_base, 0.01f, 0.25f);
+    p.raid_damage        = jit(p.raid_damage, 0.05f, 0.6f);
+    p.conquest_prob      = jit(p.conquest_prob, 0.02f, 0.35f);
+    p.winter_base_loss   = jit(p.winter_base_loss, 0.05f, 0.6f);
+    p.winter_variance    = jit(p.winter_variance, 0.02f, 0.3f);
+    p.collapse_pop       = jit(p.collapse_pop, 0.01f, 0.3f);
+    p.ruin_reclaim_prob  = jit(p.ruin_reclaim_prob, 0.05f, 0.5f);
+    p.ruin_forest_prob   = jit(p.ruin_forest_prob, 0.03f, 0.4f);
+    { float er = jit((float)p.expansion_range, 1.0f, 8.0f);
+      p.expansion_range = std::max(1, std::min(8, (int)roundf(er))); }
+    return p;
+}
+
 float evaluate_params(const std::vector<std::vector<int>>& grid,
                       const std::vector<std::vector<std::vector<float>>>& gt,
                       const SimParams& params, int num_rollouts) {
     int H = grid.size(), W = grid[0].size();
 
-    // Accumulate counts
+    // Accumulate counts with jitter (matches how simulate.cpp actually runs)
     std::vector<std::vector<std::vector<int>>> counts(
         H, std::vector<std::vector<int>>(W, std::vector<int>(NUM_CLASSES, 0)));
 
+    std::mt19937 jitter_rng(12345);
     for (int r = 0; r < num_rollouts; r++) {
-        SimWorld world = init_world(grid, params, 42 + r * 7919);
-        simulate_one(world, params);
+        SimParams jp = jitter_params_cal(params, jitter_rng);
+        SimWorld world = init_world(grid, jp, 42 + r * 7919);
+        simulate_one(world, jp);
         for (int y = 0; y < H; y++)
             for (int x = 0; x < W; x++)
                 counts[y][x][terrain_to_class(world.grid[y][x])]++;
     }
 
-    // Convert to probabilities with floor
+    // Convert to probabilities with terrain-aware floor (matches simulate.cpp)
     std::vector<std::vector<std::vector<float>>> probs(
         H, std::vector<std::vector<float>>(W, std::vector<float>(NUM_CLASSES)));
     for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) {
+        int init_terrain = grid[y][x];
         float total = 0;
         for (int c = 0; c < NUM_CLASSES; c++) {
-            probs[y][x][c] = std::max((float)counts[y][x][c] / num_rollouts, 0.005f);
+            float raw = (float)counts[y][x][c] / num_rollouts;
+            bool reachable = (init_terrain == TERRAIN_MOUNTAIN) ? (c == 5)
+                           : (init_terrain == TERRAIN_OCEAN) ? (c == 0)
+                           : (c != 5); // land: all except mountain
+            probs[y][x][c] = reachable ? std::max(raw, 0.003f) : 0.0f;
             total += probs[y][x][c];
         }
-        for (int c = 0; c < NUM_CLASSES; c++) probs[y][x][c] /= total;
+        if (total > 0) for (int c = 0; c < NUM_CLASSES; c++) probs[y][x][c] /= total;
     }
 
     // Score

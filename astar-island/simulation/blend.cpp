@@ -21,6 +21,18 @@
 #include <functional>
 
 #include "features.hpp"
+#include "database.hpp"
+
+// ─── Terrain-aware reachability ──────────────────────────────────────────────
+
+// Given initial terrain code, which classes can this cell reach after 50 years?
+inline bool class_reachable(int terrain, int cls)
+{
+    if (terrain == TERRAIN_MOUNTAIN) return cls == 5;       // mountains stay mountains
+    if (terrain == TERRAIN_OCEAN)    return cls == 0;       // ocean stays ocean
+    // Land cells: everything except mountain
+    return cls != 5;
+}
 
 // ─── Model names ─────────────────────────────────────────────────────────────
 
@@ -130,6 +142,47 @@ void write_astp(const std::string& path, int round, int seed, int W, int H,
     f.close();
 }
 
+// ─── Grid loading (flat) ──────────────────────────────────────────────────
+
+// Load initial terrain grid as flat H*W array of terrain codes.
+// Returns empty vector if not found.
+std::vector<int> load_grid_flat(const std::string& path, int want_round, int want_seed,
+                                int expect_W, int expect_H)
+{
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return {};
+
+    char magic[4]; f.read(magic, 4);
+    uint16_t ver; f.read((char*)&ver, 2);
+    uint32_t count; f.read((char*)&count, 4);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        int32_t round, seed, W, H;
+        f.read((char*)&round, 4);
+        f.read((char*)&seed, 4);
+        f.read((char*)&W, 4);
+        f.read((char*)&H, 4);
+
+        if (round == want_round && seed == want_seed && W == expect_W && H == expect_H)
+        {
+            std::vector<int> grid(H * W);
+            for (int j = 0; j < H * W; j++)
+            {
+                int32_t val;
+                f.read((char*)&val, 4);
+                grid[j] = val;
+            }
+            return grid;
+        }
+        else
+        {
+            f.seekg((int64_t)W * H * 4, std::ios::cur);
+        }
+    }
+    return {};
+}
+
 // ─── Scoring ─────────────────────────────────────────────────────────────────
 
 static constexpr float PROB_FLOOR = 0.005f;
@@ -139,11 +192,29 @@ inline float prob_at(const ProbGrid& g, int W, int y, int x, int c)
     return g[(y * W + x) * NUM_CLASSES + c];
 }
 
-// Apply floor and renormalize a single cell in-place
-void apply_floor(float* probs)
+// Apply floor and renormalize a single cell in-place.
+// If terrain >= 0, use smart flooring (only floor reachable classes).
+void apply_floor(float* probs, int terrain = -1)
 {
-    for (int c = 0; c < NUM_CLASSES; c++)
-        if (probs[c] < PROB_FLOOR) probs[c] = PROB_FLOOR;
+    if (terrain >= 0)
+    {
+        for (int c = 0; c < NUM_CLASSES; c++)
+        {
+            if (class_reachable(terrain, c))
+            {
+                if (probs[c] < PROB_FLOOR) probs[c] = PROB_FLOOR;
+            }
+            else
+            {
+                probs[c] = 0.0f;
+            }
+        }
+    }
+    else
+    {
+        for (int c = 0; c < NUM_CLASSES; c++)
+            if (probs[c] < PROB_FLOOR) probs[c] = PROB_FLOOR;
+    }
 
     float total = 0;
     for (int c = 0; c < NUM_CLASSES; c++) total += probs[c];
@@ -199,12 +270,15 @@ ScoreResult compute_score(const ProbGrid& gt, const ProbGrid& pred, int W, int H
 
 // Blend predictions with per-class weights
 // weights[c][m] = weight for class c, model m
+// terrain: flat H*W terrain codes (empty = use naive flooring)
 ProbGrid blend_predictions(const PredSet& preds, int W, int H,
                            const float weights[NUM_CLASSES][NUM_MODELS],
-                           const bool available[NUM_MODELS])
+                           const bool available[NUM_MODELS],
+                           const std::vector<int>& terrain = {})
 {
     int n = H * W * NUM_CLASSES;
     ProbGrid out(n);
+    bool has_terrain = (int)terrain.size() == H * W;
 
     for (int y = 0; y < H; y++)
     {
@@ -249,7 +323,8 @@ ProbGrid blend_predictions(const PredSet& preds, int W, int H,
                 cell[c] = val;
             }
 
-            apply_floor(cell);
+            int t = has_terrain ? terrain[y * W + x] : -1;
+            apply_floor(cell, t);
 
             for (int c = 0; c < NUM_CLASSES; c++)
                 out[(y * W + x) * NUM_CLASSES + c] = cell[c];
@@ -266,6 +341,7 @@ struct DataEntry
     int round, seed, W, H;
     const ProbGrid* gt;
     PredSet preds;
+    std::vector<int> terrain;  // H*W initial terrain codes (empty if grids not loaded)
 };
 
 // ─── Per-class KL optimization helper ────────────────────────────────────────
@@ -283,6 +359,7 @@ double eval_class_weights(int cls,
     for (auto& de : data)
     {
         if (de.round == exclude_round) continue;
+        bool has_terrain = (int)de.terrain.size() == de.H * de.W;
 
         for (int y = 0; y < de.H; y++)
         {
@@ -298,6 +375,13 @@ double eval_class_weights(int cls,
 
                 float gt_c = prob_at(*de.gt, de.W, y, x, cls);
                 if (gt_c <= 0) continue;
+
+                // Smart reachability: skip unreachable class for this terrain
+                if (has_terrain)
+                {
+                    int t = de.terrain[y * de.W + x];
+                    if (!class_reachable(t, cls)) continue;
+                }
 
                 float w_sum = 0;
                 float blended = 0;
@@ -339,6 +423,7 @@ int main(int argc, char* argv[])
         printf("  --predict <round>    Generate blended predictions for this round\n");
         printf("  --output <path>      Output path pattern (default: {data_dir}/pred_blend_r{R}_s{S}.bin)\n");
         printf("  --step <N>           Grid search denominator (default: 10, i.e. step 0.1)\n");
+        printf("  --grids <path>       Path to grids.bin for terrain-aware flooring\n");
         return 1;
     }
 
@@ -347,6 +432,7 @@ int main(int argc, char* argv[])
     int predict_round = -1;
     std::string output_pattern;
     int grid_steps = 10;
+    std::string grids_path;
 
     for (int i = 2; i < argc; i++)
     {
@@ -358,6 +444,8 @@ int main(int argc, char* argv[])
             output_pattern = argv[++i];
         else if (!strcmp(argv[i], "--step") && i + 1 < argc)
             grid_steps = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--grids") && i + 1 < argc)
+            grids_path = argv[++i];
     }
 
     // Ensure data_dir ends with /
@@ -368,6 +456,10 @@ int main(int argc, char* argv[])
     printf("  Ground truth: %s\n", gt_path.c_str());
     printf("  Data dir:     %s\n", data_dir.c_str());
     printf("  Grid steps:   %d (step size = %.2f)\n", grid_steps, 1.0 / grid_steps);
+    if (!grids_path.empty())
+        printf("  Grids:        %s (smart flooring enabled)\n", grids_path.c_str());
+    else
+        printf("  Grids:        none (naive flooring — use --grids for better scores)\n");
     if (predict_round >= 0)
         printf("  Predict:      round %d\n", predict_round);
     printf("\n");
@@ -421,7 +513,21 @@ int main(int argc, char* argv[])
             }
         }
 
+        // Load terrain grid for smart flooring
+        if (!grids_path.empty())
+        {
+            de.terrain = load_grid_flat(grids_path, gte.round, gte.seed, gte.W, gte.H);
+        }
+
         data.push_back(std::move(de));
+    }
+
+    // Report terrain loading
+    if (!grids_path.empty())
+    {
+        int loaded = 0;
+        for (auto& de : data) if (!de.terrain.empty()) loaded++;
+        printf("Terrain grids loaded: %d / %d entries\n", loaded, (int)data.size());
     }
 
     printf("Model availability:\n");
@@ -560,7 +666,7 @@ int main(int argc, char* argv[])
         {
             if (de.round != test_round) continue;
 
-            ProbGrid blended = blend_predictions(de.preds, de.W, de.H, fw, global_available);
+            ProbGrid blended = blend_predictions(de.preds, de.W, de.H, fw, global_available, de.terrain);
             auto res = compute_score(*de.gt, blended, de.W, de.H);
             fold_total_score += res.score;
             fold_count++;
@@ -650,7 +756,7 @@ int main(int argc, char* argv[])
 
     for (auto& de : data)
     {
-        ProbGrid blended = blend_predictions(de.preds, de.W, de.H, final_weights, global_available);
+        ProbGrid blended = blend_predictions(de.preds, de.W, de.H, final_weights, global_available, de.terrain);
         auto res = compute_score(*de.gt, blended, de.W, de.H);
 
         char label[32];
@@ -769,7 +875,12 @@ int main(int argc, char* argv[])
                 continue;
             }
 
-            ProbGrid blended = blend_predictions(preds, W, H, final_weights, global_available);
+            // Load terrain for smart flooring in prediction
+            std::vector<int> pred_terrain;
+            if (!grids_path.empty())
+                pred_terrain = load_grid_flat(grids_path, predict_round, seed, W, H);
+
+            ProbGrid blended = blend_predictions(preds, W, H, final_weights, global_available, pred_terrain);
 
             // Determine output path
             std::string out_path;

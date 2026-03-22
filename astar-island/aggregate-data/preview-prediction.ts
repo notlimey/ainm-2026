@@ -1,82 +1,8 @@
 import "@std/dotenv/load";
+import { NUM_CLASSES, terrainToClass, readPrediction as readPredictionBin, readGridBin, readGroundTruthBin, entropy } from "./bin-io.ts";
 
 const BIN_DIR = "../simulation/data";
 const DATA_DIR = "data";
-const NUM_CLASSES = 6;
-
-function terrainToClass(code: number): number {
-	switch (code) {
-		case 1: return 1;
-		case 2: return 2;
-		case 3: return 3;
-		case 4: return 4;
-		case 5: return 5;
-		default: return 0;
-	}
-}
-
-function readPredictionBin(path: string) {
-	const data = Deno.readFileSync(path);
-	const view = new DataView(data.buffer);
-	const round = view.getInt32(6, true);
-	const seed = view.getInt32(10, true);
-	const W = view.getInt32(14, true);
-	const H = view.getInt32(18, true);
-	const prediction: number[][][] = [];
-	let offset = 22;
-	for (let y = 0; y < H; y++) {
-		const row: number[][] = [];
-		for (let x = 0; x < W; x++) {
-			const cell: number[] = [];
-			for (let c = 0; c < NUM_CLASSES; c++) { cell.push(view.getFloat32(offset, true)); offset += 4; }
-			row.push(cell);
-		}
-		prediction.push(row);
-	}
-	return { round, seed, W, H, prediction };
-}
-
-function readGridBin(path: string, wantRound: number, wantSeed: number) {
-	const data = Deno.readFileSync(path);
-	const view = new DataView(data.buffer);
-	let offset = 6;
-	const count = view.getUint32(offset, true); offset += 4;
-	for (let i = 0; i < count; i++) {
-		const round = view.getInt32(offset, true); offset += 4;
-		const seed = view.getInt32(offset, true); offset += 4;
-		const W = view.getInt32(offset, true); offset += 4;
-		const H = view.getInt32(offset, true); offset += 4;
-		if (round === wantRound && seed === wantSeed) {
-			const grid: number[][] = [];
-			for (let y = 0; y < H; y++) { const row: number[] = []; for (let x = 0; x < W; x++) { row.push(view.getInt32(offset, true)); offset += 4; } grid.push(row); }
-			return { W, H, grid };
-		}
-		offset += W * H * 4;
-	}
-	return null;
-}
-
-function readGroundTruthBin(path: string, wantRound: number, wantSeed: number) {
-	try {
-		const data = Deno.readFileSync(path);
-		const view = new DataView(data.buffer);
-		let offset = 6;
-		const count = view.getUint32(offset, true); offset += 4;
-		for (let i = 0; i < count; i++) {
-			const round = view.getInt32(offset, true); offset += 4;
-			const seed = view.getInt32(offset, true); offset += 4;
-			const W = view.getInt32(offset, true); offset += 4;
-			const H = view.getInt32(offset, true); offset += 4;
-			if (round === wantRound && seed === wantSeed) {
-				const gt: number[][][] = [];
-				for (let y = 0; y < H; y++) { const row: number[][] = []; for (let x = 0; x < W; x++) { const cell: number[] = []; for (let c = 0; c < NUM_CLASSES; c++) { cell.push(view.getFloat32(offset, true)); offset += 4; } row.push(cell); } gt.push(row); }
-				return gt;
-			}
-			offset += W * H * NUM_CLASSES * 4;
-		}
-	} catch { /* */ }
-	return null;
-}
 
 const CLASSES = [
 	{ name: "Empty/Ocean/Plains", short: "Empty", color: [200, 184, 138] },
@@ -114,12 +40,6 @@ interface ScoreRow {
 	sim: number | null;
 	cnn: number | null;
 	blend: number | null;
-}
-
-function entropy(p: number[]): number {
-	let h = 0;
-	for (const v of p) if (v > 0) h -= v * Math.log2(v);
-	return h;
 }
 
 function klDivergence(p: number[], q: number[]): number {
@@ -161,6 +81,7 @@ function computeAllScores(rounds: RoundData[]): ScoreRow[] {
 
 function scoreColor(s: number | null): string {
 	if (s === null) return '#555';
+	if (s >= 90) return '#38bdf8';
 	if (s >= 80) return '#4ade80';
 	if (s >= 65) return '#a3e635';
 	if (s >= 50) return '#facc15';
@@ -370,7 +291,7 @@ function score(gt,pred,W,H){
 }
 
 function scColor(s){
-  if(s>=80)return'#4ade80';if(s>=65)return'#a3e635';if(s>=50)return'#facc15';return'#f87171';
+  if(s>=90)return'#38bdf8';if(s>=80)return'#4ade80';if(s>=65)return'#a3e635';if(s>=50)return'#facc15';return'#f87171';
 }
 
 function draw(cv,w,h,sz,fn){
@@ -397,9 +318,12 @@ function drawProbs(cv,probs,w,h,sz,mode,ci,gt,maxE){
 }
 
 let canvasMap=new Map();
+let locked=false;
+let lockedX=-1,lockedY=-1,lockedSeed=null;
 
 function render(){
   const rd=ROUNDS[roundSel.value];if(!rd)return;
+  locked=false;lockedSeed=null;info.style.borderColor='#333';
   const sz=parseInt(zm.value),msz=parseInt(mzm.value),mode=vm.value,ci=parseInt(cs.value);
   cw.style.display=mode==='class'?'':'none';
 
@@ -518,24 +442,44 @@ function render(){
     }
     row.appendChild(gtDiv);
 
+    // Dynamic cell count
+    if(s.ground_truth){
+      let dynCells=0;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(ent(s.ground_truth[y][x])>1e-6)dynCells++;
+      const statDiv=document.createElement('div');
+      statDiv.style.cssText='font-size:10px;color:#555;writing-mode:vertical-rl;padding:4px;display:flex;align-items:center';
+      statDiv.textContent=dynCells+' dyn';
+      row.appendChild(statDiv);
+    }
+
     seedRows.appendChild(row);
   }
 
   document.querySelectorAll('canvas').forEach(cv=>{
     cv.addEventListener('mousemove',e=>hover(e,cv));
+    cv.addEventListener('mouseleave',()=>{if(!locked)info.innerHTML='Hover over any cell';});
+    cv.addEventListener('click',e=>{
+      const meta=canvasMap.get(cv);if(!meta)return;
+      const s=meta.seed;
+      const sz=cv.width/s.W,rect=cv.getBoundingClientRect();
+      const x=Math.floor((e.clientX-rect.left)/sz),y=Math.floor((e.clientY-rect.top)/sz);
+      if(x<0||x>=s.W||y<0||y>=s.H)return;
+      if(locked&&lockedX===x&&lockedY===y&&lockedSeed===s){
+        locked=false;info.style.borderColor='#333';
+      } else {
+        locked=true;lockedX=x;lockedY=y;lockedSeed=s;
+        info.style.borderColor='#38bdf8';
+        showCellInfo(s,x,y);
+      }
+    });
   });
 }
 
-function hover(e,cv){
-  const meta=canvasMap.get(cv);if(!meta)return;
-  const s=meta.seed;
-  const sz=cv.width/s.W,rect=cv.getBoundingClientRect();
-  const x=Math.floor((e.clientX-rect.left)/sz),y=Math.floor((e.clientY-rect.top)/sz);
-  if(x<0||x>=s.W||y<0||y>=s.H)return;
-
+function showCellInfo(s,x,y){
   const ig=s.initial_grid?tc(s.initial_grid[y][x]):-1;
   let html='<span style="color:#888">Cell ('+x+','+y+') R'+s.round+'.S'+s.seed;
   if(ig>=0)html+=' | initial: <b>'+CS[ig]+'</b>';
+  if(locked)html+=' | <span style="color:#38bdf8">LOCKED</span> <span style="color:#555">(click to unlock, Esc to clear)</span>';
   html+='</span><br><div class="info-cols">';
 
   const sources=[
@@ -559,12 +503,34 @@ function hover(e,cv){
       col+='<div class="bar-bg"><div class="bar-fill" style="width:'+pv+'%;background:rgb('+c+')"></div></div>';
       col+='<div class="bar-val">'+pv+'%</div></div>';
     }
+    if(s.ground_truth&&src.name!=='Ground Truth'){
+      const gt_p=s.ground_truth[y][x];
+      const cellEntropy=ent(gt_p);
+      const kl=klDiv(gt_p,p);
+      col+='<div style="font-size:9px;color:#666;margin-top:2px">KL: '+kl.toFixed(3)+' | wKL: '+(cellEntropy*kl).toFixed(3)+'</div>';
+    }
     col+='</div>';
     html+=col;
   }
   html+='</div>';
   info.innerHTML=html;
 }
+
+function hover(e,cv){
+  if(locked)return;
+  const meta=canvasMap.get(cv);if(!meta)return;
+  const s=meta.seed;
+  const sz=cv.width/s.W,rect=cv.getBoundingClientRect();
+  const x=Math.floor((e.clientX-rect.left)/sz),y=Math.floor((e.clientY-rect.top)/sz);
+  if(x<0||x>=s.W||y<0||y>=s.H)return;
+  showCellInfo(s,x,y);
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&locked){locked=false;info.style.borderColor='#333';info.innerHTML='Hover over any cell';}
+  if(e.key==='ArrowLeft'){const v=parseInt(roundSel.value);if(v>0){roundSel.value=v-1;render();}}
+  if(e.key==='ArrowRight'){const v=parseInt(roundSel.value);if(v<ROUNDS.length-1){roundSel.value=v+1;render();}}
+});
 
 roundSel.addEventListener('change',render);
 vm.addEventListener('change',render);
