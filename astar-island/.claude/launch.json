@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "overview-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "../overview", "dev"],
+      "port": 4321
+    }
+  ]
+}

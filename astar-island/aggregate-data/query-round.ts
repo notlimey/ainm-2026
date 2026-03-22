@@ -218,6 +218,169 @@ function blendPredictions(
 	return { blended, refinedCells, avgSamples: refinedCells > 0 ? totalSamples / refinedCells : 0 };
 }
 
+// ── Per-class temperature scaling ──
+// Optimizes 3 temperature parameters (Empty, Settlement, Forest) using query observations.
+// T<1 = sharpen (boost the class), T>1 = soften (suppress the class).
+// This corrects the systematic bias between sim predictions and actual round outcomes.
+
+function applyTemperatures(pred: number[][][], W: number, H: number, temps: number[]): number[][][] {
+	const result: number[][][] = [];
+	for (let y = 0; y < H; y++) {
+		const row: number[][] = [];
+		for (let x = 0; x < W; x++) {
+			const cell: number[] = [];
+			let total = 0;
+			for (let c = 0; c < NUM_CLASSES; c++) {
+				const v = Math.pow(Math.max(pred[y][x][c], 1e-8), temps[c]);
+				cell.push(v);
+				total += v;
+			}
+			for (let c = 0; c < NUM_CLASSES; c++) cell[c] /= total;
+			row.push(cell);
+		}
+		result.push(row);
+	}
+	return result;
+}
+
+// Pooled temperature optimization: uses ALL seeds' queries for robust estimation.
+// Called AFTER all seeds are queried. Returns round-level temperatures.
+// Now also optimizes Port (2) and Ruin (3) temps, and uses settlement stats to
+// set informed search ranges.
+function optimizeTemperaturesPooled(
+	roundNum: number,
+	seeds: number[],
+	W: number, H: number,
+): { temps: number[]; nPairs: number; stats: SettlementStats | null } {
+	interface Pair { pred: number[]; emp: number[]; weight: number; }
+	const pairs: Pair[] = [];
+
+	// Collect settlement stats across all seeds
+	const allQueries: StoredQuery[] = [];
+
+	for (const seed of seeds) {
+		// Load prediction
+		let pred: number[][][] | null = null;
+		for (const prefix of ["pred_sim_", "pred_blend_", "pred_r"]) {
+			try {
+				const p = readPrediction(`${BIN_DIR}/${prefix}r${roundNum}_s${seed}.bin`);
+				pred = p.prediction;
+				break;
+			} catch { /* try next */ }
+		}
+		if (!pred) continue;
+
+		// Load stored queries
+		let queries: StoredQuery[];
+		try {
+			queries = JSON.parse(Deno.readTextFileSync(`${DATA_DIR}/queries/r${roundNum}/s${seed}_queries.json`));
+		} catch { continue; }
+		allQueries.push(...queries);
+
+		// Accumulate observations
+		const sampleCounts: number[][] = Array.from({ length: H }, () => new Array(W).fill(0));
+		const classCounts: number[][][] = Array.from({ length: H }, () =>
+			Array.from({ length: W }, () => new Array(NUM_CLASSES).fill(0))
+		);
+		for (const q of queries) {
+			for (let gy = 0; gy < q.grid.length; gy++) {
+				for (let gx = 0; gx < q.grid[gy].length; gx++) {
+					const mx = q.viewport.x + gx, my = q.viewport.y + gy;
+					if (mx >= W || my >= H) continue;
+					classCounts[my][mx][terrainToClass(q.grid[gy][gx])]++;
+					sampleCounts[my][mx]++;
+				}
+			}
+		}
+
+		for (let y = 0; y < H; y++) {
+			for (let x = 0; x < W; x++) {
+				const n = sampleCounts[y][x];
+				if (n < 1) continue;
+				// Use prediction entropy to identify dynamic cells
+				let predEnt = 0;
+				for (let c = 0; c < NUM_CLASSES; c++) {
+					if (pred[y][x][c] > 0.001) predEnt -= pred[y][x][c] * Math.log(pred[y][x][c]);
+				}
+				if (predEnt < 0.1) continue;
+
+				const emp = classCounts[y][x].map((c: number) => c / n);
+				pairs.push({ pred: [...pred[y][x]], emp, weight: Math.sqrt(n) * predEnt });
+			}
+		}
+	}
+
+	// Compute settlement stats
+	const stats = aggregateSettlementStats(allQueries);
+	if (stats) {
+		console.log(`  Settlement stats: ${stats.nAlive} alive, ${stats.nPorts} ports, ${stats.nFactions} factions`);
+		console.log(`    avg pop=${stats.avgPopulation.toFixed(2)} food=${stats.avgFood.toFixed(2)} def=${stats.avgDefense.toFixed(2)} wealth=${stats.avgWealth.toFixed(3)}`);
+	}
+
+	if (pairs.length < 50) return { temps: [1, 1, 1, 1, 1, 1], nPairs: pairs.length, stats };
+
+	const REG_STRENGTH = 0.003;
+	function scoreTemps(temps: number[]): number {
+		let totalKL = 0;
+		let totalW = 0;
+		for (const { pred, emp, weight } of pairs) {
+			const pr = pred.map((v, c) => Math.pow(Math.max(v, 1e-8), temps[c]));
+			const total = pr.reduce((a, b) => a + b, 0);
+			pr.forEach((_, i) => pr[i] /= total);
+			let kl = 0;
+			for (let c = 0; c < NUM_CLASSES; c++) {
+				if (emp[c] > 0.001) kl += emp[c] * Math.log(emp[c] / Math.max(pr[c], 1e-8));
+			}
+			totalKL += weight * kl;
+			totalW += weight;
+		}
+		let pen = 0;
+		for (let c = 0; c < 5; c++) pen += (temps[c] - 1) * (temps[c] - 1);
+		return (totalW > 0 ? totalKL / totalW : 999) + REG_STRENGTH * pen;
+	}
+
+	// 2-stage optimization: coarse grid then fine refinement around best
+	const coarseOpts = [0.8, 0.9, 0.95, 1.0, 1.05, 1.1, 1.2, 1.3];
+	let bestTemps = [1, 1, 1, 1, 1, 1];
+	let bestKL = scoreTemps(bestTemps);
+
+	// Stage 1: coarse search over E, S, P, R, F (5 classes, Mountain locked at 1.0)
+	for (const tE of coarseOpts) {
+		for (const tS of coarseOpts) {
+			for (const tF of coarseOpts) {
+				// Also try Port and Ruin temps (smaller range, less data)
+				for (const tPR of [0.9, 1.0, 1.1]) {
+					const temps = [tE, tS, tPR, tPR, tF, 1.0];
+					const kl = scoreTemps(temps);
+					if (kl < bestKL) { bestKL = kl; bestTemps = [...temps]; }
+				}
+			}
+		}
+	}
+
+	// Stage 2: fine refinement around best (±0.05 steps)
+	const fineRange = [-0.05, -0.025, 0, 0.025, 0.05];
+	const stage1Best = [...bestTemps];
+	for (const dE of fineRange) {
+		for (const dS of fineRange) {
+			for (const dF of fineRange) {
+				const temps = [
+					stage1Best[0] + dE,
+					stage1Best[1] + dS,
+					stage1Best[2],
+					stage1Best[3],
+					stage1Best[4] + dF,
+					1.0,
+				];
+				const kl = scoreTemps(temps);
+				if (kl < bestKL) { bestKL = kl; bestTemps = [...temps]; }
+			}
+		}
+	}
+
+	return { temps: bestTemps, nPairs: pairs.length, stats };
+}
+
 function ensemblePredictions(bucket: number[][][], mlp: number[][][], W: number, H: number): number[][][] {
 	// 70/30 bucket-heavy blend — best average across all historical rounds.
 	// Bucket is more stable; MLP adds value but has high variance.
@@ -245,13 +408,74 @@ function ensemblePredictions(bucket: number[][][], mlp: number[][][], W: number,
 
 // ── Storage ──
 
+interface QuerySettlement {
+	x: number;
+	y: number;
+	population: number;
+	food: number;
+	wealth: number;
+	defense: number;
+	has_port: boolean;
+	alive: boolean;
+	owner_id: number;
+}
+
 interface StoredQuery {
 	query_index: number;
 	seed_index: number;
 	viewport: { x: number; y: number; w: number; h: number };
 	grid: number[][];
-	settlements: unknown[];
+	settlements: QuerySettlement[];
 	timestamp: string;
+}
+
+// Aggregate settlement statistics from all queries for a seed/round
+interface SettlementStats {
+	avgPopulation: number;
+	avgFood: number;
+	avgDefense: number;
+	avgWealth: number;
+	nAlive: number;
+	nPorts: number;
+	nFactions: number;
+	portRatio: number;
+	// Per-query stats for variance estimation
+	populationVariance: number;
+	foodVariance: number;
+}
+
+function aggregateSettlementStats(queries: StoredQuery[]): SettlementStats | null {
+	const settlements: QuerySettlement[] = [];
+	for (const q of queries) {
+		for (const s of q.settlements) {
+			if (s && s.alive) settlements.push(s);
+		}
+	}
+	if (settlements.length < 3) return null;
+
+	const factionIds = new Set(settlements.map(s => s.owner_id));
+
+	const avgPop = settlements.reduce((a, s) => a + s.population, 0) / settlements.length;
+	const avgFood = settlements.reduce((a, s) => a + s.food, 0) / settlements.length;
+	const avgDef = settlements.reduce((a, s) => a + s.defense, 0) / settlements.length;
+	const avgWealth = settlements.reduce((a, s) => a + s.wealth, 0) / settlements.length;
+	const nPorts = settlements.filter(s => s.has_port).length;
+
+	const popVar = settlements.reduce((a, s) => a + (s.population - avgPop) ** 2, 0) / settlements.length;
+	const foodVar = settlements.reduce((a, s) => a + (s.food - avgFood) ** 2, 0) / settlements.length;
+
+	return {
+		avgPopulation: avgPop,
+		avgFood: avgFood,
+		avgDefense: avgDef,
+		avgWealth: avgWealth,
+		nAlive: settlements.length,
+		nPorts,
+		nFactions: factionIds.size,
+		portRatio: nPorts / settlements.length,
+		populationVariance: popVar,
+		foodVariance: foodVar,
+	};
 }
 
 async function loadStoredQueries(roundNum: number, seedIdx: number): Promise<StoredQuery[]> {
@@ -305,7 +529,7 @@ async function main() {
 	if (isNaN(roundNum)) {
 		console.log("Usage: query-round.ts <round_number> [options]");
 		console.log("  --queries-per-seed N   queries per seed (default: 10)");
-		console.log("  --viewport N           viewport size (default: 10)");
+		console.log("  --viewport N           viewport size (default: 15, max 15)");
 		console.log("  --model TYPE           bucket|mlp|sim|blend|ensemble (default: auto-detect)");
 		console.log("  --dry-run              skip API calls, use stored queries only");
 		console.log("  --blend-only           no queries, just blend stored queries with models");
@@ -315,7 +539,7 @@ async function main() {
 	}
 
 	const queriesPerSeed = parseInt(args.find((_, i) => args[i - 1] === "--queries-per-seed") || "10");
-	const vpSize = parseInt(args.find((_, i) => args[i - 1] === "--viewport") || "10");
+	const vpSize = parseInt(args.find((_, i) => args[i - 1] === "--viewport") || "15");
 	const explicitModel = args.find((_, i) => args[i - 1] === "--model");
 	const dryRun = args.includes("--dry-run");
 	const blendOnly = args.includes("--blend-only");
@@ -581,7 +805,7 @@ async function main() {
 			console.log(`  Saved ${allQueries.length} total queries`);
 		}
 
-		// Accumulate observations and blend
+		// Accumulate observations and blend (temperatures applied in second pass below)
 		const { sampleCounts, classCounts } = accumulateQueries(allQueries, W, H);
 		const { blended, refinedCells, avgSamples } = blendPredictions(modelPred, sampleCounts, classCounts, W, H, initialGrid);
 
@@ -599,6 +823,32 @@ async function main() {
 
 		summaryRows.push(`  S${seedIdx}: ${allQueries.length} queries, ${refinedCells} cells refined`);
 		console.log();
+	}
+
+	// ── Second pass: pooled temperature scaling ──
+	// Uses ALL seeds' query observations to estimate round-level temperatures,
+	// then re-applies to all predictions. This is much more robust than per-seed.
+	console.log(`\n━━━ Pooled Temperature Scaling ━━━`);
+	const { temps, nPairs, stats: settlementStats } = optimizeTemperaturesPooled(roundNum, seeds, 40, 40);
+	const isNonTrivial = temps.some((t, i) => i < 5 && t !== 1);
+
+	if (isNonTrivial && nPairs >= 50) {
+		console.log(`  Temps: E=${temps[0]} S=${temps[1]} P=${temps[2]} R=${temps[3]} F=${temps[4]} (from ${nPairs} observation pairs)`);
+
+		for (const seedIdx of seeds) {
+			// Re-read the blended prediction (just written above)
+			const submitPath = `${BIN_DIR}/pred_r${roundNum}_s${seedIdx}.bin`;
+			try {
+				const pred = readPrediction(submitPath);
+				const tempered = applyTemperatures(pred.prediction, pred.W, pred.H, temps);
+				writePrediction(submitPath, roundNum, seedIdx, pred.W, pred.H, tempered);
+				console.log(`  S${seedIdx}: applied temperatures`);
+			} catch (e) {
+				console.log(`  S${seedIdx}: failed to apply temperatures: ${e}`);
+			}
+		}
+	} else {
+		console.log(`  No temperature adjustment (${isNonTrivial ? 'insufficient data' : 'no improvement found'}, ${nPairs} pairs)`);
 	}
 
 	console.log(`\n━━━ Summary ━━━`);

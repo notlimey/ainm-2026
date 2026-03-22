@@ -105,7 +105,7 @@ for S in 0 1 2 3 4; do cp data/pred_sim_r<R>_s${S}.bin data/pred_r<R>_s${S}.bin;
 cd aggregate-data && deno run -A submit-predictions.ts --round <R>
 
 # 4. Queries
-deno run -A query-round.ts <R> --queries-per-seed 10 --viewport 10 --model sim
+deno run -A query-round.ts <R> --queries-per-seed 10 --viewport 15 --model sim
 
 # 5. Per-round tune (uses query observations to optimize params for THIS round)
 cd simulation
@@ -150,6 +150,37 @@ end
   --seeds-per-round 3 --output data/params_v2.bin
 ```
 
+## Recent Improvements (March 22)
+
+### Viewport 15×15 (was 10×10)
+- API allows max 15×15 per query. Previous code used 10×10 = 100 cells. Now 15×15 = 225 cells.
+- **2.25× more data per query** from same 50-query budget.
+- Changed in: `auto-round.sh` (default), `query-round.ts` (default + usage string).
+
+### Settlement Property Inference
+Query API returns settlement properties (population, food, wealth, defense, owner_id, has_port) — previously stored as `unknown[]` and ignored.
+
+**query-round.ts changes:**
+- Typed `QuerySettlement` interface with all settlement fields
+- `aggregateSettlementStats()` aggregates stats across all queries for a round
+- Settlement stats printed during pooled temperature scaling pass
+- Temperature optimization now also searches Port/Ruin temps (5 classes, not just 3)
+- 2-stage temp optimization: coarse grid + fine refinement (±0.05 steps)
+
+**tune.cpp changes:**
+- `evaluate_params()` now takes observed `SettlementStats` and computes dual objective:
+  - **85% terrain KL** (same as before)
+  - **15% settlement property matching** (population, food, defense, wealth, ports, factions, count)
+- `settlement_distance()` computes weighted normalized distance between observed and sim stats
+- Settlement-informed param nudging is now proportional (ratio-based) instead of fixed thresholds:
+  - Population ratio → scales growth_rate, collapse_pop, expansion_pop
+  - Food ratio → scales food_per_forest, food_per_coastal, winter_base_loss
+  - Defense ratio → scales raid_damage, raid_prob_base
+  - Port ratio → scales port_prob
+  - Faction count → scales conquest_prob
+  - Wealth → scales trade_range
+- Regularization uses original base params (before nudging) to anchor search
+
 ## Known Issues / TODO
 1. ~~**predict.cpp grid loading bug**~~ — FIXED: was a documentation bug. Arg order is `training.bin grids.bin`, not the reverse.
 2. ~~**Sim too entropic on empty cells**~~ — FIXED: smart probability floor. Only floors reachable classes (no fake mountain/ruin on static cells). **+2.0 avg improvement across all rounds.**
@@ -157,6 +188,9 @@ end
 4. **expansion_range added to calibrate.cpp** as 40th param but hasn't been re-calibrated yet.
 5. **CNN instance norm**: Must use training mode for inference when trained with threads (running stats not synced).
 6. **Settlement under-prediction is 88.7% of total error** — For GT-dominant settlement cells, sim predicts 20.8% vs GT 57.3%. Expansion mechanics too conservative. See `analyze-errors.ts` for details.
+7. **~15 hardcoded magic numbers in simulate.cpp** that could be hidden params (food cap, growth cost, defense recovery, expansion ratios, etc.). See review notes.
+8. **Wealth mechanic** — `s.wealth` accumulates but never affects any decision in sim. Real sim likely uses wealth for defense/growth/targeting.
+9. **Ryzen recalibration needed** — Current params calibrated on old trade code + fewer rounds.
 
 ## Scoring Formula
 ```

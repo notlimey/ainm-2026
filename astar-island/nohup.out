@@ -153,3 +153,40 @@ mv: .watch_state.tmp: No such file or directory
 [2026-03-22 09:49:47]   Fetching ground truth for completed round 20
 [2026-03-22 09:49:49]   GT for round 20 fetched & converted
 [2026-03-22 09:49:49]   Next check in 120 min
+[2026-03-22 11:49:49] ── Checking for active round ──
+[2026-03-22 11:49:50]   Active: Round 22 | 57 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-22 11:49:50]   >>> NEW ROUND 22 — running full pipeline
+[2026-03-22 12:07:25]   >>> Round 22 submitted successfully!
+[2026-03-22 12:07:25]   Fetching ground truth for completed round 21
+[2026-03-22 12:07:27]   GT for round 21 fetched & converted
+[2026-03-22 12:07:27]   Next check in 28 min (round closes in 57 min)
+[2026-03-22 12:35:27] ── Checking for active round ──
+[2026-03-22 12:35:27]   Active: Round 22 | 11 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 12:35:27]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 12:35:27]   Fetching ground truth for completed round 21
+[2026-03-22 12:35:29]   GT for round 21 fetched & converted
+[2026-03-22 12:35:29]   Round closing soon! Next check in 5 min
+[2026-03-22 12:40:29] ── Checking for active round ──
+[2026-03-22 12:40:29]   Active: Round 22 | 6 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 12:40:29]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 12:40:29]   Fetching ground truth for completed round 21
+[2026-03-22 12:40:31]   GT for round 21 fetched & converted
+[2026-03-22 12:40:31]   Round closing soon! Next check in 5 min
+[2026-03-22 12:45:31] ── Checking for active round ──
+[2026-03-22 12:45:36]   Active: Round 22 | 1 min left | 5/5 seeds | 50/50 queries | state: submitted
+[2026-03-22 12:45:36]   >>> Already fully processed (50/50 queries used)
+[2026-03-22 12:45:36]   Fetching ground truth for completed round 21
+[2026-03-22 12:45:39]   GT for round 21 fetched & converted
+[2026-03-22 12:45:39]   Round closing soon! Next check in 5 min
+[2026-03-22 12:50:39] ── Checking for active round ──
+[2026-03-22 12:50:41]   No active round
+[2026-03-22 12:50:41]   Fetching ground truth for completed round 22
+[2026-03-22 12:50:43]   GT for round 22 fetched & converted
+[2026-03-22 12:50:43]   Next check in 120 min
+[2026-03-22 14:50:43] ── Checking for active round ──
+[2026-03-22 14:50:44]   Active: Round 23 | 9 min left | 5/5 seeds | 50/50 queries | state: new
+[2026-03-22 14:50:44]   >>> NEW ROUND 23 — running full pipeline
+[2026-03-22 15:09:53]   >>> Round 23 submitted successfully!
+[2026-03-22 15:09:53]   Fetching ground truth for completed round 22
+[2026-03-22 15:10:02]   GT for round 22 fetched & converted
+[2026-03-22 15:10:02]   Round closing soon! Next check in 5 min
