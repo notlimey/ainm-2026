@@ -1,0 +1,104 @@
+---
+interface Round {
+  r: number;
+  score: number;
+  rank: number;
+  teams: number;
+  weight: number;
+  missed?: boolean;
+}
+interface Props {
+  rounds: Round[];
+}
+const { rounds } = Astro.props;
+---
+
+<div class="chart-container">
+  <div class="chart">
+    {rounds.map(r => {
+      if (r.missed) {
+        return (
+          <div class="chart-bar-group">
+            <div class="chart-bar missed" style="height: 12px; background: var(--border);">
+              <div class="tooltip">R{r.r}: missed</div>
+            </div>
+            <span class="chart-label" style="color: #333;">R{r.r}</span>
+          </div>
+        );
+      }
+      const h = (r.score / 100) * 180;
+      const color = r.score >= 80 ? 'var(--green)' : r.score >= 60 ? 'var(--amber)' : 'var(--red)';
+      return (
+        <div class="chart-bar-group">
+          <div class="chart-bar" style={`height: ${h}px; background: ${color};`}>
+            <div class="tooltip">R{r.r}: {r.score} (#{r.rank}/{r.teams})</div>
+          </div>
+          <span class="chart-label">R{r.r}</span>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
+<style>
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 200px;
+    padding-top: 20px;
+    min-width: fit-content;
+  }
+
+  .chart-bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 48px;
+  }
+
+  .chart-bar {
+    width: 40px;
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    transition: all 0.3s;
+    cursor: default;
+  }
+
+  .chart-bar:hover { filter: brightness(1.2); }
+
+  .chart-bar .tooltip {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    z-index: 10;
+    margin-bottom: 4px;
+  }
+
+  .chart-bar:hover .tooltip { display: block; }
+
+  .chart-label {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+  }
+</style>

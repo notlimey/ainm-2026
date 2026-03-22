@@ -22,7 +22,7 @@ NM i AI (Norwegian AI Championship) challenge: predict probability distributions
 
 ### Models (avg cross-validation score, 13 rounds, 50 rollouts)
 1. **CNN/U-Net** (69.8 avg) — Learns corrections on top of sim. Excels on R4 (90+), mountains. Only R1-R10 predictions available.
-2. **Simulator** (varies) — Monte Carlo Norse world sim, CMA-ES calibrated, 40 params. Best on most rounds but terrible on R12 (35).
+2. **Simulator** (varies) — Monte Carlo Norse world sim, CMA-ES calibrated, 50 params (40 original + 10 v2). Best on most rounds but terrible on R12 (35).
 3. **Bucket** — Histogram predictor from training data. Best for empty/plains class.
 4. **MLP** — 2-layer neural net with 23 hand-crafted features per cell.
 
@@ -60,7 +60,7 @@ NM i AI (Norwegian AI Championship) challenge: predict probability distributions
   - `--grids` enables terrain-aware smart flooring (+1.1 CV points)
 - `tune.cpp` — Per-round parameter tuning using query observations.
   - `./tune data/grids.bin <round> --params data/params.bin --queries-dir ../aggregate-data/data/queries --output data/params_r{R}.bin`
-  - Uses Nelder-Mead to optimize 8 key params against query observations
+  - Uses Nelder-Mead to optimize 12 params against query observations (terrain KL)
   - **+19 points on hard rounds (R10, R17, R18), slight risk on easy rounds → use with pick-best strategy**
   - Always generate both base and tuned predictions, score against query observations, pick the better one
 - `features.hpp` — Feature extraction (23 features per cell incl. x/W, y/H position)
@@ -71,6 +71,7 @@ NM i AI (Norwegian AI Championship) challenge: predict probability distributions
 - `fetch-analysis.ts` — Fetches ground truth + initial grids from API
 - `convert-to-bin.ts` — Converts JSON → binary (training.bin, grids.bin, ground_truth.bin)
 - `query-round.ts` — Sends viewport queries, Bayesian blends with model predictions
+- `select-best-model.ts` — Oracle model selection: scores all models against query observations, picks best per seed
 - `submit-predictions.ts` — Submits prediction .bin files to API
 - `preview-prediction.ts` — Generates HTML dashboard with all models + scores
 - `client.ts` — API client wrapper
@@ -168,29 +169,20 @@ Query API returns settlement properties (population, food, wealth, defense, owne
 - 2-stage temp optimization: coarse grid + fine refinement (±0.05 steps)
 
 **tune.cpp changes:**
-- `evaluate_params()` now takes observed `SettlementStats` and computes dual objective:
-  - **85% terrain KL** (same as before)
-  - **15% settlement property matching** (population, food, defense, wealth, ports, factions, count)
-- `settlement_distance()` computes weighted normalized distance between observed and sim stats
-- Settlement-informed param nudging is now proportional (ratio-based) instead of fixed thresholds:
-  - Population ratio → scales growth_rate, collapse_pop, expansion_pop
-  - Food ratio → scales food_per_forest, food_per_coastal, winter_base_loss
-  - Defense ratio → scales raid_damage, raid_prob_base
-  - Port ratio → scales port_prob
-  - Faction count → scales conquest_prob
-  - Wealth → scales trade_range
-- Regularization uses original base params (before nudging) to anchor search
+- Tunes 12 params with Nelder-Mead using query observations (terrain KL only)
+- Params tuned: expansion_pop, expansion_prob, growth_rate, raid_prob_base, winter_base_loss, collapse_pop, ruin_reclaim_prob, food_per_forest + v2: expansion_split, growth_food_cost, food_cap, defense_recovery
 
 ## Known Issues / TODO
 1. ~~**predict.cpp grid loading bug**~~ — FIXED: was a documentation bug. Arg order is `training.bin grids.bin`, not the reverse.
 2. ~~**Sim too entropic on empty cells**~~ — FIXED: smart probability floor. Only floors reachable classes (no fake mountain/ruin on static cells). **+2.0 avg improvement across all rounds.**
 3. **R3 is terrible everywhere** (39-51) — Only 420 dynamic cells/seed. Settlements completely collapse in GT (1.8% survival) but sim over-predicts them. Fundamentally different hidden params than average.
-4. **expansion_range added to calibrate.cpp** as 40th param but hasn't been re-calibrated yet.
+4. ~~**expansion_range added to calibrate.cpp**~~ — Now 50 params total (40 original + 10 new v2 params). Needs recalibration.
 5. **CNN instance norm**: Must use training mode for inference when trained with threads (running stats not synced).
-6. **Settlement under-prediction is 88.7% of total error** — For GT-dominant settlement cells, sim predicts 20.8% vs GT 57.3%. Expansion mechanics too conservative. See `analyze-errors.ts` for details.
-7. **~15 hardcoded magic numbers in simulate.cpp** that could be hidden params (food cap, growth cost, defense recovery, expansion ratios, etc.). See review notes.
-8. **Wealth mechanic** — `s.wealth` accumulates but never affects any decision in sim. Real sim likely uses wealth for defense/growth/targeting.
-9. **Ryzen recalibration needed** — Current params calibrated on old trade code + fewer rounds.
+6. **Settlement under-prediction is 88.7% of total error** — Addressed by new v2 params: expansion_split, growth_food_cost, food_cap, wealth_growth_bonus. Needs recalibration to take effect.
+7. ~~**~15 hardcoded magic numbers in simulate.cpp**~~ — 8 exposed as calibration params + 2 wealth interaction params. ~25 more remain (see review notes).
+8. ~~**Wealth mechanic**~~ — Now active: wealth_growth_bonus (wealth boosts growth), wealth_defense_bonus (wealth boosts defense recovery). Default 0.0 until calibrated.
+9. **Ryzen recalibration needed** — CRITICAL: must recalibrate with 50 params to unlock v2 improvements. Command: `./calibrate data/grids.bin data/ground_truth.bin --generations 400 --rollouts 50 --threads 32 --output data/params_v3.bin`
+10. **Oracle model selection** — `select-best-model.ts` scores all models against queries, picks best per seed. Integrated into auto-round.sh. On historical data, blend wins almost every seed.
 
 ## Scoring Formula
 ```

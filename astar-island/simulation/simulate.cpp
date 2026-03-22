@@ -164,19 +164,19 @@ void phase_growth(SimWorld& w, const SimParams& p) {
             else if (t == TERRAIN_PLAINS || t == TERRAIN_EMPTY) food_gain += p.food_per_plains;
         }
         if (w.is_coastal(s.x, s.y)) food_gain += p.food_per_coastal;
-        food_gain *= (1.0f + 0.1f * s.tech);
+        food_gain *= (1.0f + p.tech_food_bonus * s.tech);
         s.food += food_gain;
-        s.food = std::min(s.food, 1.0f);
+        s.food = std::min(s.food, p.food_cap);
 
-        // Population growth
+        // Population growth (wealth accelerates growth)
         if (s.food > p.growth_threshold) {
-            float growth = p.growth_rate * s.food;
+            float growth = p.growth_rate * s.food * (1.0f + p.wealth_growth_bonus * s.wealth);
             s.population += growth;
-            s.food -= growth * 0.4f;
+            s.food -= growth * p.growth_food_cost;
         }
 
-        // Defense recovery
-        if (s.defense < 1.0f) s.defense += 0.02f;
+        // Defense recovery (wealth accelerates recovery)
+        if (s.defense < 1.0f) s.defense += p.defense_recovery * (1.0f + p.wealth_defense_bonus * s.wealth);
         s.defense = std::min(s.defense, 1.0f);
 
         // Port development
@@ -243,7 +243,7 @@ void phase_growth(SimWorld& w, const SimParams& p) {
 
         SimSettlement ns;
         ns.x = e.tx; ns.y = e.ty;
-        ns.population = parent.population * 0.25f;
+        ns.population = parent.population * p.expansion_split;
         parent.population -= ns.population;
         ns.food = 0.3f;
         ns.wealth = 0.0f;
@@ -307,7 +307,7 @@ void phase_conflict(SimWorld& w, const SimParams& p) {
         w.mark_war(s.owner_id, target.owner_id);
 
         // Resolve combat
-        float attack = s.population * (1.0f + 0.2f * s.tech);
+        float attack = s.population * (1.0f + p.tech_attack_bonus * s.tech);
         float defend = target.defense * target.population;
         float roll = 0.5f + w.randf(); // 0.5-1.5 variance
 
@@ -321,7 +321,7 @@ void phase_conflict(SimWorld& w, const SimParams& p) {
             target.population -= 0.05f;
 
             // Conquest?
-            if (target.defense < 0.1f && w.randf() < p.conquest_prob) {
+            if (target.defense < p.conquest_threshold && w.randf() < p.conquest_prob) {
                 target.owner_id = s.owner_id;
             }
         }
@@ -407,7 +407,7 @@ void phase_winter(SimWorld& w, const SimParams& p) {
             if (w.settlements[j].owner_id != s.owner_id) continue;
             float dist = sqrtf((s.x - w.settlements[j].x) * (s.x - w.settlements[j].x) +
                                (s.y - w.settlements[j].y) * (s.y - w.settlements[j].y));
-            if (dist <= 5.0f) nearby.push_back(j);
+            if (dist <= p.collapse_dispersion) nearby.push_back(j);
         }
         if (!nearby.empty()) {
             float share = pop_to_spread / nearby.size();

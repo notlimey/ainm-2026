@@ -1,5 +1,11 @@
 ---
-// NM i AI 2026 — Team Overview
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Hero from "../components/Hero.astro";
+import StatsBar from "../components/StatsBar.astro";
+import ScoreChart from "../components/ScoreChart.astro";
+import Pipeline from "../components/Pipeline.astro";
+import ModelBlendTable from "../components/ModelBlendTable.astro";
+
 const rounds = [
   { r: 7, score: 59.8, rank: 88, teams: 199, weight: 1.41 },
   { r: 8, score: 71.6, rank: 87, teams: 214, weight: 1.48 },
@@ -17,573 +23,51 @@ const rounds = [
   { r: 20, score: 60.7, rank: 153, teams: 181, weight: 2.65 },
   { r: 21, score: 82.3, rank: 136, teams: 225, weight: 2.79 },
   { r: 22, score: 73.3, rank: 163, teams: 278, weight: 2.93 },
+  { r: 23, score: 51.1, rank: 189, teams: 285, weight: 3.07 },
 ];
 
 const submitted = rounds.filter(r => !r.missed);
-const bestRound = submitted.reduce((a, b) => a.score > b.score ? a : b);
-const bestRank = submitted.reduce((a, b) => (a.rank / a.teams) < (b.rank / b.teams) ? a : b);
-const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length).toFixed(1);
+
+const blendRows = [
+  { terrain: "Empty / Plains", model: "Bucket", blend: "100%" },
+  { terrain: "Settlement", model: "MLP + Sim", blend: "10% + 90%" },
+  { terrain: "Port", model: "Sim", blend: "100%" },
+  { terrain: "Ruin", model: "CNN", blend: "100%", best: true },
+  { terrain: "Forest", model: "Sim + CNN", blend: "60% + 40%" },
+  { terrain: "Mountain", model: "CNN", blend: "100%", best: true },
+];
+
+const pipelineSteps = [
+  { label: "Fetch Grid" },
+  { label: "Run Sim (200 rollouts)", highlight: true },
+  { label: "Submit Safety Net" },
+  { label: "50 Queries", highlight: true },
+  { label: "Tune Params" },
+  { label: "Re-simulate" },
+  { label: "Bayesian Blend", highlight: true },
+  { label: "Final Submit" },
+];
 ---
 
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta name="viewport" content="width=device-width" />
-  <title>NM i AI 2026 — Overview</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0a0a0f;
-      --surface: #12121a;
-      --surface-2: #1a1a28;
-      --border: #2a2a3a;
-      --text: #e0e0ee;
-      --text-dim: #8888aa;
-      --accent: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.15);
-      --green: #22c55e;
-      --amber: #f59e0b;
-      --red: #ef4444;
-      --blue: #3b82f6;
-    }
-
-    body {
-      font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
-
-    .hero {
-      position: relative;
-      padding: 80px 24px 60px;
-      text-align: center;
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .hero-badge {
-      display: inline-block;
-      padding: 6px 16px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-dim);
-      margin-bottom: 20px;
-      letter-spacing: 0.5px;
-    }
-
-    .hero h1 {
-      font-size: clamp(36px, 6vw, 64px);
-      font-weight: 800;
-      letter-spacing: -1.5px;
-      line-height: 1.1;
-      margin-bottom: 16px;
-    }
-
-    .hero h1 .accent { color: var(--accent); }
-
-    .hero p {
-      font-size: 18px;
-      color: var(--text-dim);
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    /* Stats bar */
-    .stats-bar {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 60px;
-    }
-
-    .stat {
-      background: var(--surface);
-      padding: 24px;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 4px;
-    }
-
-    /* Section */
-    .section {
-      margin-bottom: 80px;
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-
-    .section-number {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      color: var(--accent);
-      background: var(--accent-glow);
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-weight: 600;
-    }
-
-    .section h2 {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-
-    .section-subtitle {
-      font-size: 14px;
-      color: var(--text-dim);
-      margin-left: auto;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .section-desc {
-      color: var(--text-dim);
-      font-size: 16px;
-      max-width: 800px;
-      margin-bottom: 32px;
-    }
-
-    /* Cards */
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      transition: border-color 0.2s;
-    }
-
-    .card:hover {
-      border-color: var(--accent);
-    }
-
-    .card h3 {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card p {
-      font-size: 14px;
-      color: var(--text-dim);
-      line-height: 1.6;
-    }
-
-    .card-tag {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .tag-cpp { background: #1e3a5f; color: #60a5fa; }
-    .tag-ts { background: #1e3a2f; color: #4ade80; }
-    .tag-python { background: #3a3a1e; color: #facc15; }
-
-    /* Score chart */
-    .chart-container {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 32px;
-      overflow-x: auto;
-    }
-
-    .chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-      height: 200px;
-      padding-top: 20px;
-      min-width: fit-content;
-    }
-
-    .chart-bar-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      min-width: 48px;
-    }
-
-    .chart-bar {
-      width: 40px;
-      border-radius: 4px 4px 0 0;
-      position: relative;
-      transition: all 0.3s;
-      cursor: default;
-    }
-
-    .chart-bar:hover {
-      filter: brightness(1.2);
-    }
-
-    .chart-bar .tooltip {
-      display: none;
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-family: 'JetBrains Mono', monospace;
-      white-space: nowrap;
-      z-index: 10;
-      margin-bottom: 4px;
-    }
-
-    .chart-bar:hover .tooltip { display: block; }
-
-    .chart-label {
-      font-size: 11px;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--text-dim);
-    }
-
-    /* Models table */
-    .model-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    .model-table th {
-      text-align: left;
-      padding: 12px 16px;
-      font-size: 12px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid var(--border);
-      font-weight: 500;
-    }
-
-    .model-table td {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .model-table tr:last-child td { border-bottom: none; }
-
-    .model-table .score {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-    }
-
-    .model-table .best { color: var(--green); }
-
-    /* Dashboard embed */
-    .dashboard-frame {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 32px;
-    }
-
-    .dashboard-frame iframe {
-      width: 100%;
-      height: 80vh;
-      border: none;
-      display: block;
-    }
-
-    .dashboard-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface-2);
-    }
-
-    .dashboard-header span {
-      font-size: 13px;
-      color: var(--text-dim);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .dashboard-header a {
-      font-size: 12px;
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    /* Approach list */
-    .approach-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .approach-item {
-      display: flex;
-      gap: 16px;
-      padding: 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }
-
-    .approach-item .step {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      color: var(--accent);
-      font-weight: 600;
-      min-width: 24px;
-    }
-
-    .approach-item h4 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .approach-item p {
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-
-    /* Tech stack */
-    .tech-stack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 32px;
-    }
-
-    .tech-pill {
-      padding: 6px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      font-size: 13px;
-      color: var(--text-dim);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    /* Challenge card large */
-    .challenge-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      margin-bottom: 24px;
-    }
-
-    .challenge-card h3 {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .challenge-card .subtitle {
-      color: var(--text-dim);
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-
-    .result-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 600;
-      margin-right: 8px;
-      margin-bottom: 8px;
-    }
-
-    .result-badge.gold { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .result-badge.silver { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
-    .result-badge.blue { background: rgba(59, 130, 246, 0.15); color: var(--blue); border: 1px solid rgba(59, 130, 246, 0.3); }
-
-    .key-points {
-      list-style: none;
-      margin-top: 16px;
-    }
-
-    .key-points li {
-      padding: 6px 0;
-      font-size: 14px;
-      color: var(--text-dim);
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .key-points li::before {
-      content: '>';
-      color: var(--accent);
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 40px 24px;
-      color: var(--text-dim);
-      font-size: 13px;
-      border-top: 1px solid var(--border);
-    }
-
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    /* Score color helper classes */
-    .score-high { color: var(--green); }
-    .score-mid { color: var(--amber); }
-    .score-low { color: var(--red); }
-
-    /* Pipeline diagram */
-    .pipeline {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-wrap: wrap;
-      padding: 20px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      margin-bottom: 32px;
-      overflow-x: auto;
-    }
-
-    .pipeline-node {
-      padding: 10px 16px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 13px;
-      font-family: 'JetBrains Mono', monospace;
-      white-space: nowrap;
-      text-align: center;
-    }
-
-    .pipeline-node.highlight {
-      border-color: var(--accent);
-      background: var(--accent-glow);
-    }
-
-    .pipeline-arrow {
-      color: var(--text-dim);
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-
-    @media (max-width: 768px) {
-      .hero { padding: 48px 16px 40px; }
-      .section-header { flex-wrap: wrap; }
-      .section-subtitle { margin-left: 0; }
-      .pipeline { flex-direction: column; }
-      .pipeline-arrow { transform: rotate(90deg); }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Hero -->
-  <div class="hero">
-    <div class="hero-badge">NM i AI 2026 — Norwegian AI Championship</div>
-    <h1>Three Challenges,<br/>One <span class="accent">Wild Ride</span></h1>
-    <p>Solo entry across all three tracks: Norse world simulation, accounting API agents, and grocery shelf detection.</p>
-  </div>
+<BaseLayout>
+  <Hero
+    badge="NM i AI 2026 — Norwegian AI Championship"
+    title="Three Challenges,"
+    highlight="One Wild Ride"
+    subtitle="Solo entry across all three tracks: Norse world simulation, accounting API agents, and grocery shelf detection."
+  />
 
   <div class="container">
 
-    <!-- Quick stats -->
-    <div class="stats-bar">
-      <div class="stat">
-        <div class="stat-value">3</div>
-        <div class="stat-label">Challenges</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">13</div>
-        <div class="stat-label">Rounds Submitted</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">90.9</div>
-        <div class="stat-label">Best Score</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">#21</div>
-        <div class="stat-label">Best Rank</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value">C++</div>
-        <div class="stat-label">Primary Lang</div>
-      </div>
-    </div>
+    <StatsBar stats={[
+      { value: "3", label: "Challenges" },
+      { value: String(submitted.length), label: "Rounds Submitted" },
+      { value: "90.9", label: "Best Score" },
+      { value: "#21", label: "Best Rank" },
+      { value: "C++", label: "Primary Lang" },
+    ]} />
 
-    <!-- ═══════════════════════════════════════════════ -->
-    <!-- CHALLENGE 1: A* ISLAND                         -->
-    <!-- ═══════════════════════════════════════════════ -->
+    <!-- CHALLENGE 1: A* ISLAND -->
     <div class="section">
       <div class="section-header">
         <span class="section-number">01</span>
@@ -597,7 +81,6 @@ const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length)
         Each round had 5 seeds, 50 queries, and a 2-hour window.
       </p>
 
-      <!-- Tech -->
       <div class="tech-stack">
         <span class="tech-pill">C++17</span>
         <span class="tech-pill">Monte Carlo Sim</span>
@@ -609,35 +92,8 @@ const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length)
         <span class="tech-pill">Deno</span>
       </div>
 
-      <!-- Score Chart -->
-      <div class="chart-container">
-        <div class="chart">
-          {rounds.map(r => {
-            if (r.missed) {
-              return (
-                <div class="chart-bar-group">
-                  <div class="chart-bar missed" style="height: 12px; background: var(--border);">
-                    <div class="tooltip">R{r.r}: missed</div>
-                  </div>
-                  <span class="chart-label" style="color: #333;">R{r.r}</span>
-                </div>
-              );
-            }
-            const h = (r.score / 100) * 180;
-            const color = r.score >= 80 ? 'var(--green)' : r.score >= 60 ? 'var(--amber)' : 'var(--red)';
-            return (
-              <div class="chart-bar-group">
-                <div class="chart-bar" style={`height: ${h}px; background: ${color};`}>
-                  <div class="tooltip">R{r.r}: {r.score} (#{r.rank}/{r.teams})</div>
-                </div>
-                <span class="chart-label">R{r.r}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <ScoreChart rounds={rounds} />
 
-      <!-- 4 Models -->
       <div class="card-grid">
         <div class="card">
           <h3>Monte Carlo Simulator <span class="card-tag tag-cpp">C++</span></h3>
@@ -672,61 +128,18 @@ const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length)
         </div>
       </div>
 
-      <!-- Pipeline -->
-      <div class="pipeline">
-        <div class="pipeline-node">Fetch Grid</div>
-        <span class="pipeline-arrow">&rarr;</span>
-        <div class="pipeline-node highlight">Run Sim (200 rollouts)</div>
-        <span class="pipeline-arrow">&rarr;</span>
-        <div class="pipeline-node">Submit Safety Net</div>
-        <span class="pipeline-arrow">&rarr;</span>
-        <div class="pipeline-node highlight">50 Queries</div>
-        <span class="pipeline-arrow">&rarr;</span>
-        <div class="pipeline-node">Tune Params</div>
-        <span class="pipeline-arrow">&rarr;</span>
-        <div class="pipeline-node">Re-simulate</div>
-        <span class="pipeline-arrow">&rarr;</span>
-        <div class="pipeline-node highlight">Bayesian Blend</div>
-        <span class="pipeline-arrow">&rarr;</span>
-        <div class="pipeline-node">Final Submit</div>
-      </div>
+      <Pipeline steps={pipelineSteps} />
 
-      <!-- Per-class model blend -->
-      <div class="chart-container">
-        <h3 style="margin-bottom: 16px; font-size: 15px;">Optimal Per-Class Model Blend</h3>
-        <table class="model-table">
-          <thead>
-            <tr>
-              <th>Terrain Class</th>
-              <th>Best Model</th>
-              <th>Blend</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Empty / Plains</td><td>Bucket</td><td class="score">100%</td></tr>
-            <tr><td>Settlement</td><td>MLP + Sim</td><td class="score">10% + 90%</td></tr>
-            <tr><td>Port</td><td>Sim</td><td class="score">100%</td></tr>
-            <tr><td>Ruin</td><td>CNN</td><td class="score best">100%</td></tr>
-            <tr><td>Forest</td><td>Sim + CNN</td><td class="score">60% + 40%</td></tr>
-            <tr><td>Mountain</td><td>CNN</td><td class="score best">100%</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <ModelBlendTable rows={blendRows} />
 
-      <!-- Dashboard -->
-      <div class="dashboard-frame">
-        <div class="dashboard-header">
-          <span>Interactive Dashboard — All rounds, all models, cell-level inspection</span>
-          <a href="/astar-dashboard.html" target="_blank">Open fullscreen &nearr;</a>
-        </div>
-        <iframe src="/astar-dashboard.html" loading="lazy"></iframe>
+      <div class="dashboard-link-card">
+        <h3>Interactive Dashboard</h3>
+        <p>All rounds, all models, cell-level inspection of predictions vs ground truth.</p>
+        <a href="/dashboard/competition">View competition dashboard &rarr;</a>
       </div>
     </div>
 
-
-    <!-- ═══════════════════════════════════════════════ -->
-    <!-- CHALLENGE 2: TRIPLETEX                         -->
-    <!-- ═══════════════════════════════════════════════ -->
+    <!-- CHALLENGE 2: TRIPLETEX -->
     <div class="section">
       <div class="section-header">
         <span class="section-number">02</span>
@@ -762,10 +175,7 @@ const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length)
       </div>
     </div>
 
-
-    <!-- ═══════════════════════════════════════════════ -->
-    <!-- CHALLENGE 3: NORGESGRUPPEN                     -->
-    <!-- ═══════════════════════════════════════════════ -->
+    <!-- CHALLENGE 3: NORGESGRUPPEN -->
     <div class="section">
       <div class="section-header">
         <span class="section-number">03</span>
@@ -799,10 +209,7 @@ const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length)
       </div>
     </div>
 
-
-    <!-- ═══════════════════════════════════════════════ -->
-    <!-- KEY LEARNINGS                                  -->
-    <!-- ═══════════════════════════════════════════════ -->
+    <!-- KEY TAKEAWAYS -->
     <div class="section">
       <div class="section-header">
         <span class="section-number">++</span>
@@ -842,10 +249,38 @@ const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length)
     </div>
 
   </div>
+</BaseLayout>
 
-  <footer>
-    <p>Built for NM i AI 2026 &mdash; Solo entry &mdash; <a href="https://nmai.no" target="_blank">nmai.no</a></p>
-  </footer>
+<style>
+  .dashboard-link-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+    transition: border-color 0.2s;
+  }
 
-</body>
-</html>
+  .dashboard-link-card:hover { border-color: var(--accent); }
+
+  .dashboard-link-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .dashboard-link-card p {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .dashboard-link-card a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .dashboard-link-card a:hover { text-decoration: underline; }
+</style>

@@ -83,8 +83,22 @@ static const std::vector<ParamDef> PARAM_DEFS = {
     {"ruin_plains_prob",    0.01f, 0.3f,  0.08f},
     {"forest_adj_bonus",    0.005f,0.2f,  0.05f},
 
-    // Previously hardcoded — now calibrated
+    // Previously hardcoded — now calibrated (v1)
     {"expansion_range",     1.0f,  8.0f,  3.0f},
+
+    // Previously hardcoded constants — now calibrated (v2)
+    {"growth_food_cost",    0.1f,  0.8f,  0.4f},
+    {"tech_food_bonus",     0.0f,  0.5f,  0.1f},
+    {"food_cap",            0.5f,  3.0f,  1.0f},
+    {"expansion_split",     0.05f, 0.6f,  0.25f},
+    {"defense_recovery",    0.005f,0.1f,  0.02f},
+    {"tech_attack_bonus",   0.0f,  0.8f,  0.2f},
+    {"conquest_threshold",  0.02f, 0.4f,  0.1f},
+    {"collapse_dispersion", 1.0f,  10.0f, 5.0f},
+
+    // Wealth interactions (NEW mechanics)
+    {"wealth_growth_bonus",  0.0f, 2.0f,  0.0f},
+    {"wealth_defense_bonus", 0.0f, 2.0f,  0.0f},
 };
 
 static const int N_PARAMS = PARAM_DEFS.size();
@@ -139,6 +153,21 @@ SimParams vec_to_params(const std::vector<double>& v) {
     p.forest_adj_bonus   = v[i++];
 
     p.expansion_range = std::max(1, (int)roundf(v[i++])); // continuous → int
+
+    // v2 params
+    p.growth_food_cost    = v[i++];
+    p.tech_food_bonus     = v[i++];
+    p.food_cap            = v[i++];
+    p.expansion_split     = v[i++];
+    p.defense_recovery    = v[i++];
+    p.tech_attack_bonus   = v[i++];
+    p.conquest_threshold  = v[i++];
+    p.collapse_dispersion = v[i++];
+
+    // Wealth interactions
+    p.wealth_growth_bonus  = v[i++];
+    p.wealth_defense_bonus = v[i++];
+
     return p;
 }
 
@@ -155,7 +184,12 @@ std::vector<double> params_to_vec(const SimParams& p) {
         p.winter_catastrophe_mult, p.collapse_pop, p.collapse_food, p.collapse_defense,
         p.ruin_reclaim_range, p.ruin_reclaim_prob, p.ruin_forest_prob, p.ruin_plains_prob,
         p.forest_adj_bonus,
-        (double)p.expansion_range  // now calibrated
+        (double)p.expansion_range,  // now calibrated
+        // v2 params
+        p.growth_food_cost, p.tech_food_bonus, p.food_cap, p.expansion_split,
+        p.defense_recovery, p.tech_attack_bonus, p.conquest_threshold, p.collapse_dispersion,
+        // Wealth interactions
+        p.wealth_growth_bonus, p.wealth_defense_bonus
     };
 }
 

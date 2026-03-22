@@ -58,6 +58,27 @@ struct SimParams {
     float ruin_forest_prob   = 0.15f;
     float ruin_plains_prob   = 0.08f;
     float forest_adj_bonus   = 0.05f;   // extra forest prob per adjacent forest
+
+    // ─── Previously hardcoded constants (v2 params) ─────────────────────────
+    // Defaults match old hardcoded values so old params.bin files behave identically.
+
+    // Growth
+    float growth_food_cost   = 0.4f;    // food consumed per unit of growth
+    float tech_food_bonus    = 0.1f;    // tech multiplier on food production
+    float food_cap           = 1.0f;    // hard ceiling on stored food
+    float expansion_split    = 0.25f;   // fraction of parent pop given to new settlement
+    float defense_recovery   = 0.02f;   // yearly defense restoration rate
+
+    // Conflict
+    float tech_attack_bonus  = 0.2f;    // tech multiplier on combat attack
+    float conquest_threshold = 0.1f;    // defense below which conquest check triggers
+
+    // Winter
+    float collapse_dispersion = 5.0f;   // range for refugee dispersal on collapse
+
+    // Wealth interactions (NEW — default 0.0 = no effect, matching old behavior)
+    float wealth_growth_bonus  = 0.0f;  // wealth multiplier on growth rate
+    float wealth_defense_bonus = 0.0f;  // wealth multiplier on defense recovery
 };
 
 // ─── Save/Load params (SIMP binary format) ──────────────────────────────────
@@ -75,7 +96,22 @@ inline bool load_params(const std::string& path, SimParams& p) {
     if (!f) return false;
     char magic[4]; f.read(magic, 4);
     if (strncmp(magic, "SIMP", 4) != 0) return false;
-    f.read((char*)&p, sizeof(SimParams));
-    printf("Params loaded: %s\n", path.c_str());
+
+    // Backward compatibility: old param files may be smaller than current struct.
+    // Read whatever bytes are available; new fields keep their default values.
+    f.seekg(0, std::ios::end);
+    size_t file_size = (size_t)f.tellg() - 4; // subtract magic
+    f.seekg(4, std::ios::beg);
+
+    size_t to_read = std::min(file_size, sizeof(SimParams));
+    p = SimParams{}; // reset to defaults first
+    f.read((char*)&p, to_read);
+
+    if (to_read < sizeof(SimParams)) {
+        printf("Params loaded: %s (v1 format, %zu/%zu bytes — new params use defaults)\n",
+               path.c_str(), to_read, sizeof(SimParams));
+    } else {
+        printf("Params loaded: %s\n", path.c_str());
+    }
     return true;
 }

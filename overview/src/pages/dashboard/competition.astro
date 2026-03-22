@@ -1,0 +1,38 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Hero from "../../components/Hero.astro";
+import DashboardEmbed from "../../components/DashboardEmbed.astro";
+---
+
+<BaseLayout title="A* Island — Dashboard During Competition">
+  <Hero
+    badge="A* Island — Dashboard"
+    title="Dashboard During"
+    highlight="Competition"
+    subtitle="Interactive visualization of all rounds, models, and cell-level predictions as they were during the competition."
+  />
+
+  <div class="container">
+    <div class="section">
+      <p class="section-desc">
+        This dashboard shows the state of predictions during the competition — using the models and calibration
+        available at each round. Compare with the <a href="/dashboard/updated">updated dashboard</a> to see
+        improvements from post-competition training.
+      </p>
+
+      <DashboardEmbed
+        label="Competition Dashboard — All rounds, all models, cell-level inspection"
+        src="/astar-dashboard.html"
+        fullscreenHref="/astar-dashboard.html"
+      />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  a:hover { text-decoration: underline; }
+</style>

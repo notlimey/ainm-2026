@@ -1,0 +1,61 @@
+---
+interface Step {
+  label: string;
+  highlight?: boolean;
+}
+interface Props {
+  steps: Step[];
+}
+const { steps } = Astro.props;
+---
+
+<div class="pipeline">
+  {steps.map((step, i) => (
+    <>
+      {i > 0 && <span class="pipeline-arrow">&rarr;</span>}
+      <div class:list={["pipeline-node", { highlight: step.highlight }]}>{step.label}</div>
+    </>
+  ))}
+</div>
+
+<style>
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+
+  .pipeline-node {
+    padding: 10px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .pipeline-node.highlight {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .pipeline-arrow {
+    color: var(--text-dim);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 768px) {
+    .pipeline { flex-direction: column; }
+    .pipeline-arrow { transform: rotate(90deg); }
+  }
+</style>

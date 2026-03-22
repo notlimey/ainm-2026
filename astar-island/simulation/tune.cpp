@@ -516,14 +516,19 @@ struct TuneParam {
 
 void get_tune_params(SimParams& p, std::vector<TuneParam>& tp) {
     tp = {
-        {"expansion_pop",   &p.expansion_pop,    0.5f, 4.0f},
-        {"expansion_prob",  &p.expansion_prob,    0.02f, 0.6f},
-        {"growth_rate",     &p.growth_rate,       0.01f, 0.3f},
-        {"raid_prob_base",  &p.raid_prob_base,    0.01f, 0.3f},
-        {"winter_base_loss",&p.winter_base_loss,  0.05f, 0.8f},
-        {"collapse_pop",    &p.collapse_pop,      0.01f, 0.5f},
-        {"ruin_reclaim_prob",&p.ruin_reclaim_prob, 0.02f, 0.5f},
-        {"food_per_forest", &p.food_per_forest,   0.02f, 0.5f},
+        {"expansion_pop",     &p.expansion_pop,      0.5f, 4.0f},
+        {"expansion_prob",    &p.expansion_prob,      0.02f, 0.6f},
+        {"growth_rate",       &p.growth_rate,         0.01f, 0.3f},
+        {"raid_prob_base",    &p.raid_prob_base,      0.01f, 0.3f},
+        {"winter_base_loss",  &p.winter_base_loss,    0.05f, 0.8f},
+        {"collapse_pop",      &p.collapse_pop,        0.01f, 0.5f},
+        {"ruin_reclaim_prob", &p.ruin_reclaim_prob,   0.02f, 0.5f},
+        {"food_per_forest",   &p.food_per_forest,     0.02f, 0.5f},
+        // v2 high-leverage params
+        {"expansion_split",   &p.expansion_split,     0.05f, 0.6f},
+        {"growth_food_cost",  &p.growth_food_cost,    0.1f, 0.8f},
+        {"food_cap",          &p.food_cap,            0.5f, 3.0f},
+        {"defense_recovery",  &p.defense_recovery,    0.005f, 0.1f},
     };
 }
 
