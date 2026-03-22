@@ -5,8 +5,8 @@
 // Usage: cnn <grids.bin> <ground_truth.bin> <round> <seed> [prediction.bin]
 //        [--exclude <round>] [--epochs N] [--lr F] [--sim-dir path]
 //
-// Compile: c++ -std=c++17 -O3 -o cnn cnn.cpp
-// Linux:   g++ -std=c++17 -O3 -pthread -o cnn cnn.cpp
+// Compile: c++ -std=c++17 -O3 -framework Accelerate -o cnn cnn.cpp
+// Linux:   g++ -std=c++17 -O3 -pthread -lopenblas -o cnn cnn.cpp
 
 #include <iostream>
 #include <fstream>
@@ -23,6 +23,13 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+
+#ifdef __APPLE__
+#define ACCELERATE_NEW_LAPACK
+#include <Accelerate/Accelerate.h>
+#else
+#include <cblas.h>
+#endif
 
 static const int NUM_CLASSES = 6;
 static const int GRID_W = 40;
@@ -65,6 +72,75 @@ struct Tensor
     void zero() { std::fill(data.begin(), data.end(), 0.0f); }
     int size() const { return (int)data.size(); }
 };
+
+// ============================================================
+// Im2col / Col2im for GEMM-based convolution
+// ============================================================
+
+// Extracts overlapping patches into column matrix [in_ch*kH*kW, H*W] (row-major).
+// Same-padding: out-of-bounds positions get 0.0f.
+inline void im2col(const float* data_im, int C, int H, int W,
+                   int kH, int kW, int padH, int padW,
+                   float* data_col)
+{
+    const int HW = H * W;
+    for (int ic = 0; ic < C; ic++) {
+        for (int ky = 0; ky < kH; ky++) {
+            for (int kx = 0; kx < kW; kx++) {
+                const int row = (ic * kH + ky) * kW + kx;
+                float* col_row = data_col + row * HW;
+                const int iy_base = ky - padH;
+                const int ix_base = kx - padW;
+                const float* im_ch = data_im + ic * H * W;
+                for (int y = 0; y < H; y++) {
+                    const int iy = y + iy_base;
+                    if (iy < 0 || iy >= H) {
+                        // Entire row is zero-padded
+                        memset(col_row + y * W, 0, W * sizeof(float));
+                    } else {
+                        const float* im_row = im_ch + iy * W;
+                        float* out_row = col_row + y * W;
+                        for (int x = 0; x < W; x++) {
+                            const int ix = x + ix_base;
+                            out_row[x] = (ix >= 0 && ix < W) ? im_row[ix] : 0.0f;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Inverse of im2col: accumulates column data back into CHW tensor.
+// Output buffer must be zero-initialized before calling.
+inline void col2im(const float* data_col, int C, int H, int W,
+                   int kH, int kW, int padH, int padW,
+                   float* data_im)
+{
+    const int HW = H * W;
+    for (int ic = 0; ic < C; ic++) {
+        for (int ky = 0; ky < kH; ky++) {
+            for (int kx = 0; kx < kW; kx++) {
+                const int row = (ic * kH + ky) * kW + kx;
+                const float* col_row = data_col + row * HW;
+                const int iy_base = ky - padH;
+                const int ix_base = kx - padW;
+                float* im_ch = data_im + ic * H * W;
+                for (int y = 0; y < H; y++) {
+                    const int iy = y + iy_base;
+                    if (iy < 0 || iy >= H) continue;
+                    float* im_row = im_ch + iy * W;
+                    const float* col_ptr = col_row + y * W;
+                    for (int x = 0; x < W; x++) {
+                        const int ix = x + ix_base;
+                        if (ix >= 0 && ix < W)
+                            im_row[ix] += col_ptr[x];
+                    }
+                }
+            }
+        }
+    }
+}
 
 // ============================================================
 // U-Net layers: Conv2D, InstanceNorm, ReLU, MaxPool, Upsample
@@ -122,76 +198,75 @@ struct ConvLayer
         std::fill(dbias.begin(), dbias.end(), 0.0f);
     }
 
-    Tensor forward(const Tensor& input, bool cache = true)
+    Tensor forward(const Tensor& input, float* workspace, bool cache = true)
     {
         if(cache) input_cache = input;
         int H = input.H, W = input.W;
         int padH = kH / 2, padW = kW / 2;
-        Tensor out(out_ch, H, W);
+        int N = H * W;          // spatial output size
+        int K = in_ch * kH * kW; // column height
 
-        for(int oc = 0; oc < out_ch; oc++)
-        {
-            for(int y = 0; y < H; y++)
-            {
-                for(int x = 0; x < W; x++)
-                {
-                    float sum = bias[oc];
-                    for(int ic = 0; ic < in_ch; ic++)
-                    {
-                        for(int ky = 0; ky < kH; ky++)
-                        {
-                            int iy = y + ky - padH;
-                            if(iy < 0 || iy >= H) continue;
-                            for(int kx = 0; kx < kW; kx++)
-                            {
-                                int ix = x + kx - padW;
-                                if(ix >= 0 && ix < W)
-                                    sum += w(oc, ic, ky, kx) * input.at(ic, iy, ix);
-                            }
-                        }
-                    }
-                    out.at(oc, y, x) = sum;
-                }
-            }
+        // Im2col: input → workspace [K × N]
+        im2col(input.data.data(), in_ch, H, W, kH, kW, padH, padW, workspace);
+
+        // GEMM: output = weights[out_ch × K] × workspace[K × N]
+        Tensor out(out_ch, H, W);
+        cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                    out_ch, N, K,
+                    1.0f,
+                    weights.data(), K,
+                    workspace, N,
+                    0.0f,
+                    out.data.data(), N);
+
+        // Add bias
+        for (int oc = 0; oc < out_ch; oc++) {
+            float b = bias[oc];
+            float* row = out.data.data() + oc * N;
+            for (int i = 0; i < N; i++) row[i] += b;
         }
         return out;
     }
 
-    Tensor backward(const Tensor& d_output)
+    Tensor backward(const Tensor& d_output, float* workspace)
     {
         int H = d_output.H, W = d_output.W;
         int padH = kH / 2, padW = kW / 2;
-        Tensor d_input(in_ch, H, W);
+        int N = H * W;
+        int K = in_ch * kH * kW;
 
-        for(int oc = 0; oc < out_ch; oc++)
-        {
-            for(int y = 0; y < H; y++)
-            {
-                for(int x = 0; x < W; x++)
-                {
-                    float dout = d_output.at(oc, y, x);
-                    if(dout == 0.0f) continue;
-                    dbias[oc] += dout;
-                    for(int ic = 0; ic < in_ch; ic++)
-                    {
-                        for(int ky = 0; ky < kH; ky++)
-                        {
-                            int iy = y + ky - padH;
-                            if(iy < 0 || iy >= H) continue;
-                            for(int kx = 0; kx < kW; kx++)
-                            {
-                                int ix = x + kx - padW;
-                                if(ix >= 0 && ix < W)
-                                {
-                                    dw(oc, ic, ky, kx) += dout * input_cache.at(ic, iy, ix);
-                                    d_input.at(ic, iy, ix) += dout * w(oc, ic, ky, kx);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        // 1. dbias: sum each output channel's gradient over spatial dims
+        for (int oc = 0; oc < out_ch; oc++) {
+            const float* dout_row = d_output.data.data() + oc * N;
+            float sum = 0;
+            for (int i = 0; i < N; i++) sum += dout_row[i];
+            dbias[oc] += sum;
         }
+
+        // 2. Recompute im2col(input_cache) → workspace [K × N]
+        im2col(input_cache.data.data(), in_ch, H, W, kH, kW, padH, padW, workspace);
+
+        // 3. dweights += d_output[out_ch × N] × workspace^T[N × K]
+        cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                    out_ch, K, N,
+                    1.0f,
+                    d_output.data.data(), N,
+                    workspace, N,
+                    1.0f,  // beta=1.0: accumulate into existing dweights
+                    dweights.data(), K);
+
+        // 4. d_col = weights^T[K × out_ch] × d_output[out_ch × N] → workspace [K × N]
+        cblas_sgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+                    K, N, out_ch,
+                    1.0f,
+                    weights.data(), K,
+                    d_output.data.data(), N,
+                    0.0f,
+                    workspace, N);
+
+        // 5. col2im: workspace → d_input
+        Tensor d_input(in_ch, H, W);
+        col2im(workspace, in_ch, H, W, kH, kW, padH, padW, d_input.data.data());
         return d_input;
     }
 };
@@ -463,17 +538,9 @@ Tensor concat_channels(const Tensor& a, const Tensor& b)
     int H = a.H, W = a.W;
     Tensor out(a.C + b.C, H, W);
 
-    // Copy a
-    for(int c = 0; c < a.C; c++)
-        for(int y = 0; y < H; y++)
-            for(int x = 0; x < W; x++)
-                out.at(c, y, x) = a.at(c, y, x);
-
-    // Copy b
-    for(int c = 0; c < b.C; c++)
-        for(int y = 0; y < H; y++)
-            for(int x = 0; x < W; x++)
-                out.at(a.C + c, y, x) = b.at(c, y, x);
+    // CHW layout: a's data is contiguous, then b's
+    memcpy(out.data.data(), a.data.data(), a.data.size() * sizeof(float));
+    memcpy(out.data.data() + a.data.size(), b.data.data(), b.data.size() * sizeof(float));
     return out;
 }
 
@@ -485,15 +552,9 @@ void split_gradient(const Tensor& d_concat, int aC, Tensor& d_a, Tensor& d_b)
     d_a = Tensor(aC, H, W);
     d_b = Tensor(bC, H, W);
 
-    for(int c = 0; c < aC; c++)
-        for(int y = 0; y < H; y++)
-            for(int x = 0; x < W; x++)
-                d_a.at(c, y, x) = d_concat.at(c, y, x);
-
-    for(int c = 0; c < bC; c++)
-        for(int y = 0; y < H; y++)
-            for(int x = 0; x < W; x++)
-                d_b.at(c, y, x) = d_concat.at(aC + c, y, x);
+    // CHW layout: first aC channels contiguous, then bC
+    memcpy(d_a.data.data(), d_concat.data.data(), aC * H * W * sizeof(float));
+    memcpy(d_b.data.data(), d_concat.data.data() + aC * H * W, bC * H * W * sizeof(float));
 }
 
 // --- ReLU helpers ---
@@ -614,6 +675,9 @@ struct UNet
 
     int adam_t = 0;
 
+    // Shared workspace for im2col/col2im (sized to max across all layers)
+    std::vector<float> conv_workspace;
+
     UNet(int c0 = 32, int c1 = 64, int cb = 128)
         : ch0(c0), ch1(c1), ch_bot(cb),
           enc0_conv1(IN_CHANNELS, c0, 3, 3), enc0_bn1(c0),
@@ -628,6 +692,26 @@ struct UNet
           dec0_conv2(c0, NUM_CLASSES, 3, 3)
     {}
 
+    void allocate_workspace(int H = GRID_H, int W = GRID_W)
+    {
+        // Find max col_buf size: in_ch * kH * kW * spatial_HW
+        auto col_size = [](const ConvLayer& l, int h, int w) {
+            return l.in_ch * l.kH * l.kW * h * w;
+        };
+        int max_col = 0;
+        max_col = std::max(max_col, col_size(enc0_conv1, H, W));
+        max_col = std::max(max_col, col_size(enc0_conv2, H, W));
+        max_col = std::max(max_col, col_size(enc1_conv1, H/2, W/2));
+        max_col = std::max(max_col, col_size(enc1_conv2, H/2, W/2));
+        max_col = std::max(max_col, col_size(bot_conv1, H/4, W/4));
+        max_col = std::max(max_col, col_size(bot_conv2, H/4, W/4));
+        max_col = std::max(max_col, col_size(dec1_conv1, H/2, W/2));
+        max_col = std::max(max_col, col_size(dec1_conv2, H/2, W/2));
+        max_col = std::max(max_col, col_size(dec0_conv1, H, W));
+        max_col = std::max(max_col, col_size(dec0_conv2, H, W));
+        conv_workspace.resize(max_col);
+    }
+
     void init(std::mt19937& rng)
     {
         enc0_conv1.init_he(rng); enc0_conv2.init_he(rng);
@@ -638,6 +722,7 @@ struct UNet
         // Final layer: Xavier init for better softmax behavior
         dec0_conv2.init_xavier(rng);
         adam_t = 0;
+        allocate_workspace();
     }
 
     // --- Forward pass ---
@@ -646,13 +731,14 @@ struct UNet
     Tensor forward(const Tensor& input, bool training)
     {
         int H = input.H, W = input.W;
+        float* ws = conv_workspace.data();
 
         // === Encoder Level 0 (40x40) ===
-        enc0_z1 = enc0_conv1.forward(input, training);
+        enc0_z1 = enc0_conv1.forward(input, ws, training);
         enc0_a1 = training ? enc0_bn1.forward_train(enc0_z1) : enc0_bn1.forward_infer(enc0_z1);
         relu_forward(enc0_a1, enc0_n1);
 
-        enc0_z2 = enc0_conv2.forward(enc0_n1, training);
+        enc0_z2 = enc0_conv2.forward(enc0_n1, ws, training);
         enc0_a2 = training ? enc0_bn2.forward_train(enc0_z2) : enc0_bn2.forward_infer(enc0_z2);
         relu_forward(enc0_a2, enc0_out); // skip0 = enc0_out (32 ch, 40x40)
 
@@ -660,11 +746,11 @@ struct UNet
         pool0 = maxpool2x2_forward(enc0_out);
 
         // === Encoder Level 1 (20x20) ===
-        enc1_z1 = enc1_conv1.forward(pool0.output, training);
+        enc1_z1 = enc1_conv1.forward(pool0.output, ws, training);
         enc1_a1 = training ? enc1_bn1.forward_train(enc1_z1) : enc1_bn1.forward_infer(enc1_z1);
         relu_forward(enc1_a1, enc1_n1);
 
-        enc1_z2 = enc1_conv2.forward(enc1_n1, training);
+        enc1_z2 = enc1_conv2.forward(enc1_n1, ws, training);
         enc1_a2 = training ? enc1_bn2.forward_train(enc1_z2) : enc1_bn2.forward_infer(enc1_z2);
         relu_forward(enc1_a2, enc1_out); // skip1 = enc1_out (64 ch, 20x20)
 
@@ -672,11 +758,11 @@ struct UNet
         pool1 = maxpool2x2_forward(enc1_out);
 
         // === Bottleneck (10x10) ===
-        bot_z1 = bot_conv1.forward(pool1.output, training);
+        bot_z1 = bot_conv1.forward(pool1.output, ws, training);
         bot_a1 = training ? bot_bn1.forward_train(bot_z1) : bot_bn1.forward_infer(bot_z1);
         relu_forward(bot_a1, bot_n1);
 
-        bot_z2 = bot_conv2.forward(bot_n1, training);
+        bot_z2 = bot_conv2.forward(bot_n1, ws, training);
         bot_a2 = training ? bot_bn2.forward_train(bot_z2) : bot_bn2.forward_infer(bot_z2);
         relu_forward(bot_a2, bot_out); // 64 ch, 10x10
 
@@ -684,11 +770,11 @@ struct UNet
         up1 = upsample2x2_forward(bot_out);       // 64 ch, 20x20
         cat1 = concat_channels(up1, enc1_out);     // 128 ch, 20x20
 
-        dec1_z1 = dec1_conv1.forward(cat1, training);
+        dec1_z1 = dec1_conv1.forward(cat1, ws, training);
         dec1_a1 = training ? dec1_bn1.forward_train(dec1_z1) : dec1_bn1.forward_infer(dec1_z1);
         relu_forward(dec1_a1, dec1_n1);
 
-        dec1_z2 = dec1_conv2.forward(dec1_n1, training);
+        dec1_z2 = dec1_conv2.forward(dec1_n1, ws, training);
         dec1_a2 = training ? dec1_bn2.forward_train(dec1_z2) : dec1_bn2.forward_infer(dec1_z2);
         relu_forward(dec1_a2, dec1_out); // 32 ch, 20x20
 
@@ -696,11 +782,11 @@ struct UNet
         up0 = upsample2x2_forward(dec1_out);      // 32 ch, 40x40
         cat0 = concat_channels(up0, enc0_out);     // 64 ch, 40x40
 
-        dec0_z1 = dec0_conv1.forward(cat0, training);
+        dec0_z1 = dec0_conv1.forward(cat0, ws, training);
         dec0_a1 = training ? dec0_bn1.forward_train(dec0_z1) : dec0_bn1.forward_infer(dec0_z1);
         relu_forward(dec0_a1, dec0_n1);
 
-        dec0_z2 = dec0_conv2.forward(dec0_n1, training); // 6 ch, 40x40
+        dec0_z2 = dec0_conv2.forward(dec0_n1, ws, training); // 6 ch, 40x40
 
         // === Residual add: add sim prediction channels (first 6 of input) ===
         logits_out = Tensor(NUM_CLASSES, H, W);
@@ -748,10 +834,11 @@ struct UNet
         Tensor& d_dec0_z2 = d_logits; // reuse
 
         // === Decoder Level 0 backward ===
-        Tensor d_dec0_n1 = dec0_conv2.backward(d_dec0_z2);
+        float* ws = conv_workspace.data();
+        Tensor d_dec0_n1 = dec0_conv2.backward(d_dec0_z2, ws);
         Tensor d_dec0_a1 = relu_backward(d_dec0_n1, dec0_a1);
         Tensor d_dec0_z1 = dec0_bn1.backward(d_dec0_a1);
-        Tensor d_cat0    = dec0_conv1.backward(d_dec0_z1);
+        Tensor d_cat0    = dec0_conv1.backward(d_dec0_z1, ws);
 
         // Split cat0 gradient: up0 (ch0) + enc0_out skip (ch0)
         Tensor d_up0, d_enc0_skip;
@@ -762,10 +849,10 @@ struct UNet
         // === Decoder Level 1 backward ===
         Tensor d_dec1_a2 = relu_backward(d_dec1_out, dec1_a2);
         Tensor d_dec1_z2 = dec1_bn2.backward(d_dec1_a2);
-        Tensor d_dec1_n1 = dec1_conv2.backward(d_dec1_z2);
+        Tensor d_dec1_n1 = dec1_conv2.backward(d_dec1_z2, ws);
         Tensor d_dec1_a1 = relu_backward(d_dec1_n1, dec1_a1);
         Tensor d_dec1_z1 = dec1_bn1.backward(d_dec1_a1);
-        Tensor d_cat1    = dec1_conv1.backward(d_dec1_z1);
+        Tensor d_cat1    = dec1_conv1.backward(d_dec1_z1, ws);
 
         // Split cat1 gradient: up1 (ch1) + enc1_out skip (ch1)
         Tensor d_up1, d_enc1_skip;
@@ -776,10 +863,10 @@ struct UNet
         // === Bottleneck backward ===
         Tensor d_bot_a2 = relu_backward(d_bot_out, bot_a2);
         Tensor d_bot_z2 = bot_bn2.backward(d_bot_a2);
-        Tensor d_bot_n1 = bot_conv2.backward(d_bot_z2);
+        Tensor d_bot_n1 = bot_conv2.backward(d_bot_z2, ws);
         Tensor d_bot_a1 = relu_backward(d_bot_n1, bot_a1);
         Tensor d_bot_z1 = bot_bn1.backward(d_bot_a1);
-        Tensor d_pool1_out = bot_conv1.backward(d_bot_z1);
+        Tensor d_pool1_out = bot_conv1.backward(d_bot_z1, ws);
 
         // === MaxPool 1 backward ===
         Tensor d_enc1_out_pool = maxpool2x2_backward(d_pool1_out, pool1.indices,
@@ -791,10 +878,10 @@ struct UNet
         // === Encoder Level 1 backward ===
         Tensor d_enc1_a2 = relu_backward(d_enc1_out_pool, enc1_a2);
         Tensor d_enc1_z2 = enc1_bn2.backward(d_enc1_a2);
-        Tensor d_enc1_n1 = enc1_conv2.backward(d_enc1_z2);
+        Tensor d_enc1_n1 = enc1_conv2.backward(d_enc1_z2, ws);
         Tensor d_enc1_a1 = relu_backward(d_enc1_n1, enc1_a1);
         Tensor d_enc1_z1 = enc1_bn1.backward(d_enc1_a1);
-        Tensor d_pool0_out = enc1_conv1.backward(d_enc1_z1);
+        Tensor d_pool0_out = enc1_conv1.backward(d_enc1_z1, ws);
 
         // === MaxPool 0 backward ===
         Tensor d_enc0_out_pool = maxpool2x2_backward(d_pool0_out, pool0.indices,
@@ -806,11 +893,11 @@ struct UNet
         // === Encoder Level 0 backward ===
         Tensor d_enc0_a2 = relu_backward(d_enc0_out_pool, enc0_a2);
         Tensor d_enc0_z2 = enc0_bn2.backward(d_enc0_a2);
-        Tensor d_enc0_n1 = enc0_conv2.backward(d_enc0_z2);
+        Tensor d_enc0_n1 = enc0_conv2.backward(d_enc0_z2, ws);
         Tensor d_enc0_a1 = relu_backward(d_enc0_n1, enc0_a1);
         Tensor d_enc0_z1 = enc0_bn1.backward(d_enc0_a1);
         // We don't need d_input for the first layer
-        enc0_conv1.backward(d_enc0_z1);
+        enc0_conv1.backward(d_enc0_z1, ws);
 
         return loss;
     }
@@ -1398,6 +1485,7 @@ int main(int argc, char* argv[])
     std::vector<UNet> thread_nets;
     if(n_threads > 1) {
         thread_nets.resize(n_threads, UNet(c0, c1, cb));
+        for (auto& tnet : thread_nets) tnet.allocate_workspace();
         // They don't need their own weights - we'll copy before each batch
     }
 

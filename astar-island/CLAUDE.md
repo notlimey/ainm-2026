@@ -48,7 +48,9 @@ NM i AI (Norwegian AI Championship) challenge: predict probability distributions
   - `./cnn data/grids.bin data/ground_truth.bin <round> <seed> output.bin --exclude <round> --epochs 30 --sim-dir data --threads 32 --channels 32`
   - `--channels 16` = slim/fast (Mac), `--channels 32` = full (Ryzen)
   - Requires sim predictions as input (reads `pred_sim_r{R}_s{S}.bin`)
-  - Compile: `c++ -std=c++17 -O3 -o cnn cnn.cpp` (add `-pthread` on Linux)
+  - Uses im2col + BLAS GEMM for convolutions (11× faster than naive loops)
+  - Compile: `c++ -std=c++17 -O3 -framework Accelerate -o cnn cnn.cpp` (Mac)
+  - Compile: `g++ -std=c++17 -O3 -pthread -lopenblas -o cnn cnn.cpp` (Linux)
 - `predict.cpp` — Bucket predictor.
   - `./predict data/training.bin data/grids.bin <round> <seed> output.bin --epochs 7`
   - Note: arg order is `training.bin` first, then `grids.bin` (matches usage string in code).

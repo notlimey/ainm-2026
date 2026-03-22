@@ -123,20 +123,29 @@ process_round() {
     log "  blend: done"
     cd ..
 
-    # 9. Oracle model selection — score all models against query observations, pick best per seed
-    log "Step 9: Oracle model selection..."
-    cd "$AGG_DIR"
-    deno run -A select-best-model.ts "$ROUND" --data-dir ../simulation/data 2>&1
+    # 9. Use blend as submission base (backtest shows blend > sim on GT by ~2 pts)
+    # Query-based oracle selection is unreliable (20% accuracy vs GT), so we default to blend.
+    log "Step 9: Using blend as submission base..."
+    cd "$SIM_DIR"
+    for S in 0 1 2 3 4; do
+        cp "data/pred_blend_r${ROUND}_s${S}.bin" "data/pred_r${ROUND}_s${S}.bin"
+    done
     cd ..
 
-    # 10. Blend queries on top of best predictions
-    log "Step 10: Query blending on best predictions..."
+    # 10. Query blending on top of blend predictions (temperature scaling + Bayesian correction)
+    log "Step 10: Query correction on blend predictions..."
     cd "$AGG_DIR"
     deno run -A query-round.ts "$ROUND" --blend-only --model sim 2>&1
     cd ..
 
-    # 11. Final submission
-    log "Step 11: Final submission..."
+    # 11. Oracle diagnostics (informational only — does not change submission)
+    log "Step 11: Oracle diagnostics..."
+    cd "$AGG_DIR"
+    deno run -A select-best-model.ts "$ROUND" --data-dir ../simulation/data 2>&1
+    cd ..
+
+    # 12. Final submission
+    log "Step 12: Final submission..."
     cd "$AGG_DIR"
     deno run -A submit-predictions.ts --round "$ROUND" 2>&1
     cd ..

@@ -775,7 +775,7 @@ struct CMAES {
 int main(int argc, char** argv) {
     if (argc < 3) {
         printf("Usage: calibrate <grids.bin> <ground_truth.bin> [options]\n");
-        printf("  --generations N     CMA-ES generations (default: 150)\n");
+        printf("  --generations N     CMA-ES generations per restart (default: 150)\n");
         printf("  --rollouts N        rollouts per evaluation (default: 30)\n");
         printf("  --output file       save best params (default: data/params.bin)\n");
         printf("  --threads N         parallel threads (default: auto)\n");
@@ -783,6 +783,7 @@ int main(int argc, char** argv) {
         printf("  --cma-seed N        random seed for CMA-ES (default: 42)\n");
         printf("  --init-params file  warm-start from previous params\n");
         printf("  --seeds-per-round N training seeds per round (default: 3)\n");
+        printf("  --restarts N        number of independent CMA-ES runs (default: 1)\n");
         return 1;
     }
 
@@ -796,6 +797,7 @@ int main(int argc, char** argv) {
     int cma_seed = 42;
     std::string init_params_path;
     int seeds_per_round = 3;
+    int restarts = 1;
 
     for (int i = 3; i < argc; i++) {
         if (!strcmp(argv[i], "--generations") && i+1 < argc) generations = atoi(argv[++i]);
@@ -806,6 +808,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--cma-seed") && i+1 < argc) cma_seed = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--init-params") && i+1 < argc) init_params_path = argv[++i];
         else if (!strcmp(argv[i], "--seeds-per-round") && i+1 < argc) seeds_per_round = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--restarts") && i+1 < argc) restarts = atoi(argv[++i]);
     }
 
     printf("CMA-ES Calibration\n");
@@ -816,6 +819,7 @@ int main(int argc, char** argv) {
     printf("  CMA-ES seed:     %d\n", cma_seed);
     printf("  Params:          %d\n", N_PARAMS);
     printf("  Seeds/round:     %d\n", seeds_per_round);
+    printf("  Restarts:        %d\n", restarts);
     printf("  Output:          %s\n", output.c_str());
     if (!init_params_path.empty())
         printf("  Init params:     %s\n", init_params_path.c_str());
@@ -844,20 +848,36 @@ int main(int argc, char** argv) {
     }
     std::vector<double> init_vec = params_to_vec(start_params);
 
-    // Normalize to [0,1] for CMA-ES
-    std::vector<double> normalized(N_PARAMS);
-    for (int i = 0; i < N_PARAMS; i++) {
-        normalized[i] = (init_vec[i] - PARAM_DEFS[i].lo) / (PARAM_DEFS[i].hi - PARAM_DEFS[i].lo);
-    }
-
-    CMAES cma(N_PARAMS, normalized, initial_sigma, cma_seed);
-    printf("Population size: %d, mu: %d\n", cma.lambda, cma.mu);
-
-    // Track best
+    // Track global best across all restarts
     double best_score_ever = 0;
     std::vector<double> best_vec_ever = init_vec;
 
     auto start_time = std::chrono::steady_clock::now();
+
+    for (int restart = 0; restart < restarts; restart++) {
+    // Each restart gets a different seed and slightly different sigma
+    int restart_seed = cma_seed + restart * 1337;
+    double restart_sigma = initial_sigma;
+    std::vector<double> restart_init;
+
+    if (restart == 0) {
+        // First run: use provided init params
+        restart_init.resize(N_PARAMS);
+        for (int i = 0; i < N_PARAMS; i++)
+            restart_init[i] = (init_vec[i] - PARAM_DEFS[i].lo) / (PARAM_DEFS[i].hi - PARAM_DEFS[i].lo);
+    } else {
+        // Subsequent restarts: warm-start from global best + increased sigma for exploration
+        restart_init.resize(N_PARAMS);
+        for (int i = 0; i < N_PARAMS; i++)
+            restart_init[i] = (best_vec_ever[i] - PARAM_DEFS[i].lo) / (PARAM_DEFS[i].hi - PARAM_DEFS[i].lo);
+        restart_sigma = std::min(initial_sigma * 1.5, 0.5); // more exploration on restarts
+    }
+
+    if (restarts > 1)
+        printf("\n=== Restart %d/%d (seed=%d, sigma=%.3f) ===\n", restart + 1, restarts, restart_seed, restart_sigma);
+
+    CMAES cma(N_PARAMS, restart_init, restart_sigma, restart_seed);
+    printf("Population size: %d, mu: %d\n", cma.lambda, cma.mu);
 
     for (int gen = 0; gen < generations; gen++) {
         auto gen_start = std::chrono::steady_clock::now();
@@ -970,6 +990,8 @@ int main(int argc, char** argv) {
             }
         }
     }
+
+    } // end restart loop
 
     // Final validation with more rollouts on all cases
     printf("\n=== Final Validation (100 rollouts, all cases) ===\n");
