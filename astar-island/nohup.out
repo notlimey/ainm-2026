@@ -190,3 +190,13 @@ mv: .watch_state.tmp: No such file or directory
 [2026-03-22 15:09:53]   Fetching ground truth for completed round 22
 [2026-03-22 15:10:02]   GT for round 22 fetched & converted
 [2026-03-22 15:10:02]   Round closing soon! Next check in 5 min
+[2026-03-22 15:15:02] ── Checking for active round ──
+[2026-03-22 15:15:02]   No active round
+[2026-03-22 15:15:02]   Fetching ground truth for completed round 23
+[2026-03-22 15:15:04]   GT for round 23 fetched & converted
+[2026-03-22 15:15:04]   Next check in 120 min
+[2026-03-22 17:15:04] ── Checking for active round ──
+[2026-03-22 17:15:05]   No active round
+[2026-03-22 17:15:05]   Fetching ground truth for completed round 23
+[2026-03-22 17:15:06]   GT for round 23 fetched & converted
+[2026-03-22 17:15:06]   Next check in 120 min

@@ -19,21 +19,23 @@ torch.load = _patched_load
 from ultralytics import YOLO
 
 def main():
-    model = YOLO("yolov8m.pt")  # pretrained on COCO
+    # Resume from last checkpoint to continue training
+    model = YOLO("runs/yolov8m_ngd/weights/last.pt")
 
     model.train(
         data="data.yaml",
         epochs=150,
         imgsz=640,
-        batch=2,           # small batch to avoid TAL shape mismatch on MPS
+        batch=8,           # TAL patched to CPU fallback, can use larger batch now
         patience=30,       # early stopping
         device="mps",      # Apple Silicon GPU
         workers=4,
         project="runs",
         name="yolov8m_ngd",
-        # Augmentation — disable mosaic to avoid dense GT boxes triggering MPS TAL bug
-        mosaic=0.0,
-        mixup=0.0,
+        resume=True,       # resume from checkpoint
+        # Augmentation — re-enabled now that TAL is patched
+        mosaic=1.0,
+        mixup=0.1,
         copy_paste=0.0,
         # Optimizer
         optimizer="AdamW",

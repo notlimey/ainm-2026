@@ -11,6 +11,15 @@ Runs inference on the val split, computes:
 import argparse
 import json
 from pathlib import Path
+
+import torch
+_orig_load = torch.load
+def _patched_load(*args, **kwargs):
+    if "weights_only" not in kwargs:
+        kwargs["weights_only"] = False
+    return _orig_load(*args, **kwargs)
+torch.load = _patched_load
+
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 import copy

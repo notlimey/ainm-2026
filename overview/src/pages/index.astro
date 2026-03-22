@@ -5,6 +5,9 @@ const rounds = [
   { r: 8, score: 71.6, rank: 87, teams: 214, weight: 1.48 },
   { r: 9, score: 90.9, rank: 21, teams: 221, weight: 1.55 },
   { r: 10, score: 68.7, rank: 103, teams: 238, weight: 1.63 },
+  { r: 11, score: 0, rank: 0, teams: 0, weight: 1.71, missed: true },
+  { r: 12, score: 0, rank: 0, teams: 0, weight: 1.80, missed: true },
+  { r: 13, score: 0, rank: 0, teams: 0, weight: 1.89, missed: true },
   { r: 14, score: 57.3, rank: 141, teams: 244, weight: 1.98 },
   { r: 15, score: 85.5, rank: 102, teams: 262, weight: 2.08 },
   { r: 16, score: 80.6, rank: 100, teams: 272, weight: 2.18 },
@@ -16,9 +19,10 @@ const rounds = [
   { r: 22, score: 73.3, rank: 163, teams: 278, weight: 2.93 },
 ];
 
-const bestRound = rounds.reduce((a, b) => a.score > b.score ? a : b);
-const bestRank = rounds.reduce((a, b) => (a.rank / a.teams) < (b.rank / b.teams) ? a : b);
-const avgScore = (rounds.reduce((s, r) => s + r.score, 0) / rounds.length).toFixed(1);
+const submitted = rounds.filter(r => !r.missed);
+const bestRound = submitted.reduce((a, b) => a.score > b.score ? a : b);
+const bestRank = submitted.reduce((a, b) => (a.rank / a.teams) < (b.rank / b.teams) ? a : b);
+const avgScore = (submitted.reduce((s, r) => s + r.score, 0) / submitted.length).toFixed(1);
 ---
 
 <html lang="en">
@@ -609,6 +613,16 @@ const avgScore = (rounds.reduce((s, r) => s + r.score, 0) / rounds.length).toFix
       <div class="chart-container">
         <div class="chart">
           {rounds.map(r => {
+            if (r.missed) {
+              return (
+                <div class="chart-bar-group">
+                  <div class="chart-bar missed" style="height: 12px; background: var(--border);">
+                    <div class="tooltip">R{r.r}: missed</div>
+                  </div>
+                  <span class="chart-label" style="color: #333;">R{r.r}</span>
+                </div>
+              );
+            }
             const h = (r.score / 100) * 180;
             const color = r.score >= 80 ? 'var(--green)' : r.score >= 60 ? 'var(--amber)' : 'var(--red)';
             return (

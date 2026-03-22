@@ -16401,3 +16401,573 @@ Done. Files in simulation/data/:
   grids.bin        — initial state grids (for prediction input)
   ground_truth.bin — raw ground truth (for validation)
 [2026-03-22 15:10:02]   Round closing soon! Next check in 5 min
+[2026-03-22 15:15:02] ── Checking for active round ──
+[2026-03-22 15:15:02]   No active round
+[2026-03-22 15:15:02]   Fetching ground truth for completed round 23
+Fetching my-rounds...
+
+Round  Status      Score   Rank     Seeds  Queries
+─────  ──────────  ──────  ───────  ─────  ───────
+  23   completed     51.1  189/285  5/5  50/50
+  22   completed     73.3  163/278  5/5  50/50
+  21   completed     82.3  136/225  5/5  50/50
+  20   completed     60.7  153/181  4/5  50/50
+  19   completed     58.9  161/228  5/5  50/50
+  18   completed     47.7  179/265  5/5  50/50
+  17   completed     72.8  156/283  5/5  50/50
+  16   completed     80.6  100/272  5/5  50/50
+  15   completed     85.5  102/262  5/5  50/50
+  14   completed     57.3  141/244  5/5  50/50
+  13   completed        -        -  0/5  0/50
+  12   completed        -        -  0/5  0/50
+  11   completed        -        -  0/5  0/50
+  10   completed     68.7  103/238  5/5  50/50
+  9    completed     90.9   21/221  5/5  50/50
+  8    completed     71.6   87/214  5/5  50/50
+  7    completed     59.8   88/199  5/5  50/50
+  6    completed        -        -  0/5  0/50
+  5    completed        -        -  0/5  1/50
+  4    completed        -        -  0/5  0/50
+
+Saved to data/my-rounds.json
+
+  [r23] initial states already exist, skipping
+  [r22] initial states already exist, skipping
+  [r21] initial states already exist, skipping
+  [r20] initial states already exist, skipping
+  [r19] initial states already exist, skipping
+  [r18] initial states already exist, skipping
+  [r17] initial states already exist, skipping
+  [r16] initial states already exist, skipping
+  [r15] initial states already exist, skipping
+  [r14] initial states already exist, skipping
+  [r13] initial states already exist, skipping
+  [r12] initial states already exist, skipping
+  [r11] initial states already exist, skipping
+  [r10] initial states already exist, skipping
+  [r9] initial states already exist, skipping
+  [r8] initial states already exist, skipping
+  [r7] initial states already exist, skipping
+  [r6] initial states already exist, skipping
+  [r5] initial states already exist, skipping
+  [r4] initial states already exist, skipping
+
+Fetching analysis for 20 completed round(s)...
+
+  [r23.s0] already exists, skipping
+  [r23.s1] already exists, skipping
+  [r23.s2] already exists, skipping
+  [r23.s3] already exists, skipping
+  [r23.s4] already exists, skipping
+  [r22.s0] already exists, skipping
+  [r22.s1] already exists, skipping
+  [r22.s2] already exists, skipping
+  [r22.s3] already exists, skipping
+  [r22.s4] already exists, skipping
+  [r21.s0] already exists, skipping
+  [r21.s1] already exists, skipping
+  [r21.s2] already exists, skipping
+  [r21.s3] already exists, skipping
+  [r21.s4] already exists, skipping
+  [r20.s0] already exists, skipping
+  [r20.s1] already exists, skipping
+  [r20.s2] already exists, skipping
+  [r20.s3] already exists, skipping
+  [r20.s4] already exists, skipping
+  [r19.s0] already exists, skipping
+  [r19.s1] already exists, skipping
+  [r19.s2] already exists, skipping
+  [r19.s3] already exists, skipping
+  [r19.s4] already exists, skipping
+  [r18.s0] already exists, skipping
+  [r18.s1] already exists, skipping
+  [r18.s2] already exists, skipping
+  [r18.s3] already exists, skipping
+  [r18.s4] already exists, skipping
+  [r17.s0] already exists, skipping
+  [r17.s1] already exists, skipping
+  [r17.s2] already exists, skipping
+  [r17.s3] already exists, skipping
+  [r17.s4] already exists, skipping
+  [r16.s0] already exists, skipping
+  [r16.s1] already exists, skipping
+  [r16.s2] already exists, skipping
+  [r16.s3] already exists, skipping
+  [r16.s4] already exists, skipping
+  [r15.s0] already exists, skipping
+  [r15.s1] already exists, skipping
+  [r15.s2] already exists, skipping
+  [r15.s3] already exists, skipping
+  [r15.s4] already exists, skipping
+  [r14.s0] already exists, skipping
+  [r14.s1] already exists, skipping
+  [r14.s2] already exists, skipping
+  [r14.s3] already exists, skipping
+  [r14.s4] already exists, skipping
+  [r13.s0] already exists, skipping
+  [r13.s1] already exists, skipping
+  [r13.s2] already exists, skipping
+  [r13.s3] already exists, skipping
+  [r13.s4] already exists, skipping
+  [r12.s0] already exists, skipping
+  [r12.s1] already exists, skipping
+  [r12.s2] already exists, skipping
+  [r12.s3] already exists, skipping
+  [r12.s4] already exists, skipping
+  [r11.s0] already exists, skipping
+  [r11.s1] already exists, skipping
+  [r11.s2] already exists, skipping
+  [r11.s3] already exists, skipping
+  [r11.s4] already exists, skipping
+  [r10.s0] already exists, skipping
+  [r10.s1] already exists, skipping
+  [r10.s2] already exists, skipping
+  [r10.s3] already exists, skipping
+  [r10.s4] already exists, skipping
+  [r9.s0] already exists, skipping
+  [r9.s1] already exists, skipping
+  [r9.s2] already exists, skipping
+  [r9.s3] already exists, skipping
+  [r9.s4] already exists, skipping
+  [r8.s0] already exists, skipping
+  [r8.s1] already exists, skipping
+  [r8.s2] already exists, skipping
+  [r8.s3] already exists, skipping
+  [r8.s4] already exists, skipping
+  [r7.s0] already exists, skipping
+  [r7.s1] already exists, skipping
+  [r7.s2] already exists, skipping
+  [r7.s3] already exists, skipping
+  [r7.s4] already exists, skipping
+  [r6.s0] already exists, skipping
+  [r6.s1] already exists, skipping
+  [r6.s2] already exists, skipping
+  [r6.s3] already exists, skipping
+  [r6.s4] already exists, skipping
+  [r5.s0] already exists, skipping
+  [r5.s1] already exists, skipping
+  [r5.s2] already exists, skipping
+  [r5.s3] already exists, skipping
+  [r5.s4] already exists, skipping
+  [r4.s0] already exists, skipping
+  [r4.s1] already exists, skipping
+  [r4.s2] already exists, skipping
+  [r4.s3] already exists, skipping
+  [r4.s4] already exists, skipping
+
+Done. Training data structure:
+  data/initial/r{N}.json    — initial states (input)
+  data/analysis/r{N}/s{M}.json — ground truth (target)
+Converting JSON -> bin...
+
+  [r14.s1] 40x40 = 1600 cells (1344 dynamic)
+  [r14.s0] 40x40 = 1600 cells (1375 dynamic)
+  [r14.s3] 40x40 = 1600 cells (1363 dynamic)
+  [r14.s2] 40x40 = 1600 cells (1296 dynamic)
+  [r14.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r13.s1] 40x40 = 1600 cells (1347 dynamic)
+  [r13.s0] 40x40 = 1600 cells (1402 dynamic)
+  [r13.s3] 40x40 = 1600 cells (1343 dynamic)
+  [r13.s2] 40x40 = 1600 cells (1349 dynamic)
+  [r13.s4] 40x40 = 1600 cells (1372 dynamic)
+  [r22.s1] 40x40 = 1600 cells (657 dynamic)
+  [r22.s0] 40x40 = 1600 cells (630 dynamic)
+  [r22.s3] 40x40 = 1600 cells (791 dynamic)
+  [r22.s2] 40x40 = 1600 cells (676 dynamic)
+  [r22.s4] 40x40 = 1600 cells (756 dynamic)
+  [r23.s1] 40x40 = 1600 cells (897 dynamic)
+  [r23.s0] 40x40 = 1600 cells (912 dynamic)
+  [r23.s3] 40x40 = 1600 cells (980 dynamic)
+  [r23.s2] 40x40 = 1600 cells (929 dynamic)
+  [r23.s4] 40x40 = 1600 cells (809 dynamic)
+  [r12.s1] 40x40 = 1600 cells (747 dynamic)
+  [r12.s0] 40x40 = 1600 cells (848 dynamic)
+  [r12.s3] 40x40 = 1600 cells (915 dynamic)
+  [r12.s2] 40x40 = 1600 cells (877 dynamic)
+  [r12.s4] 40x40 = 1600 cells (833 dynamic)
+  [r15.s1] 40x40 = 1600 cells (1381 dynamic)
+  [r15.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r15.s3] 40x40 = 1600 cells (1405 dynamic)
+  [r15.s2] 40x40 = 1600 cells (1390 dynamic)
+  [r15.s4] 40x40 = 1600 cells (1398 dynamic)
+  [r7.s1] 40x40 = 1600 cells (1036 dynamic)
+  [r7.s0] 40x40 = 1600 cells (946 dynamic)
+  [r7.s3] 40x40 = 1600 cells (977 dynamic)
+  [r7.s2] 40x40 = 1600 cells (1014 dynamic)
+  [r7.s4] 40x40 = 1600 cells (1032 dynamic)
+  [r9.s1] 40x40 = 1600 cells (1375 dynamic)
+  [r9.s0] 40x40 = 1600 cells (1324 dynamic)
+  [r9.s3] 40x40 = 1600 cells (1390 dynamic)
+  [r9.s2] 40x40 = 1600 cells (1407 dynamic)
+  [r9.s4] 40x40 = 1600 cells (1380 dynamic)
+  [r8.s1] 40x40 = 1600 cells (1228 dynamic)
+  [r8.s0] 40x40 = 1600 cells (1329 dynamic)
+  [r8.s3] 40x40 = 1600 cells (1206 dynamic)
+  [r8.s2] 40x40 = 1600 cells (1305 dynamic)
+  [r8.s4] 40x40 = 1600 cells (1168 dynamic)
+  [r1.s1] 40x40 = 1600 cells (1365 dynamic)
+  [r1.s0] 40x40 = 1600 cells (1312 dynamic)
+  [r1.s3] 40x40 = 1600 cells (1394 dynamic)
+  [r1.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r1.s4] 40x40 = 1600 cells (1286 dynamic)
+  [r6.s1] 40x40 = 1600 cells (1394 dynamic)
+  [r6.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r6.s3] 40x40 = 1600 cells (1425 dynamic)
+  [r6.s2] 40x40 = 1600 cells (1350 dynamic)
+  [r6.s4] 40x40 = 1600 cells (1418 dynamic)
+  [r10.s1] 40x40 = 1600 cells (713 dynamic)
+  [r10.s0] 40x40 = 1600 cells (651 dynamic)
+  [r10.s3] 40x40 = 1600 cells (747 dynamic)
+  [r10.s2] 40x40 = 1600 cells (626 dynamic)
+  [r10.s4] 40x40 = 1600 cells (673 dynamic)
+  [r17.s1] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s0] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s3] 40x40 = 1600 cells (1377 dynamic)
+  [r17.s2] 40x40 = 1600 cells (1378 dynamic)
+  [r17.s4] 40x40 = 1600 cells (1385 dynamic)
+  [r21.s1] 40x40 = 1600 cells (1213 dynamic)
+  [r21.s0] 40x40 = 1600 cells (1113 dynamic)
+  [r21.s3] 40x40 = 1600 cells (1259 dynamic)
+  [r21.s2] 40x40 = 1600 cells (1093 dynamic)
+  [r21.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r19.s1] 40x40 = 1600 cells (1069 dynamic)
+  [r19.s0] 40x40 = 1600 cells (1176 dynamic)
+  [r19.s3] 40x40 = 1600 cells (1072 dynamic)
+  [r19.s2] 40x40 = 1600 cells (1067 dynamic)
+  [r19.s4] 40x40 = 1600 cells (947 dynamic)
+  [r18.s1] 40x40 = 1600 cells (1353 dynamic)
+  [r18.s0] 40x40 = 1600 cells (1379 dynamic)
+  [r18.s3] 40x40 = 1600 cells (1240 dynamic)
+  [r18.s2] 40x40 = 1600 cells (1364 dynamic)
+  [r18.s4] 40x40 = 1600 cells (1395 dynamic)
+  [r20.s1] 40x40 = 1600 cells (1060 dynamic)
+  [r20.s0] 40x40 = 1600 cells (992 dynamic)
+  [r20.s3] 40x40 = 1600 cells (1068 dynamic)
+  [r20.s2] 40x40 = 1600 cells (1084 dynamic)
+  [r20.s4] 40x40 = 1600 cells (1183 dynamic)
+  [r16.s1] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s0] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s3] 40x40 = 1600 cells (917 dynamic)
+  [r16.s2] 40x40 = 1600 cells (1127 dynamic)
+  [r16.s4] 40x40 = 1600 cells (1052 dynamic)
+  [r11.s1] 40x40 = 1600 cells (1317 dynamic)
+  [r11.s0] 40x40 = 1600 cells (1361 dynamic)
+  [r11.s3] 40x40 = 1600 cells (1357 dynamic)
+  [r11.s2] 40x40 = 1600 cells (1373 dynamic)
+  [r11.s4] 40x40 = 1600 cells (1320 dynamic)
+  [r3.s1] 40x40 = 1600 cells (586 dynamic)
+  [r3.s0] 40x40 = 1600 cells (551 dynamic)
+  [r3.s3] 40x40 = 1600 cells (553 dynamic)
+  [r3.s2] 40x40 = 1600 cells (548 dynamic)
+  [r3.s4] 40x40 = 1600 cells (536 dynamic)
+  [r4.s1] 40x40 = 1600 cells (1379 dynamic)
+  [r4.s0] 40x40 = 1600 cells (1351 dynamic)
+  [r4.s3] 40x40 = 1600 cells (1328 dynamic)
+  [r4.s2] 40x40 = 1600 cells (1317 dynamic)
+  [r4.s4] 40x40 = 1600 cells (1388 dynamic)
+  [r5.s1] 40x40 = 1600 cells (1188 dynamic)
+  [r5.s0] 40x40 = 1600 cells (1260 dynamic)
+  [r5.s3] 40x40 = 1600 cells (1230 dynamic)
+  [r5.s2] 40x40 = 1600 cells (1280 dynamic)
+  [r5.s4] 40x40 = 1600 cells (1274 dynamic)
+  [r2.s1] 40x40 = 1600 cells (1390 dynamic)
+  [r2.s0] 40x40 = 1600 cells (1415 dynamic)
+  [r2.s3] 40x40 = 1600 cells (1354 dynamic)
+  [r2.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r2.s4] 40x40 = 1600 cells (1397 dynamic)
+
+Training: 184000 samples (133065 dynamic) -> ../simulation/data/training.bin
+
+Grids: 230 entries -> ../simulation/data/grids.bin
+Ground truth: 115 entries -> ../simulation/data/ground_truth.bin
+
+Done. Files in simulation/data/:
+  training.bin     — features + ground truth (for model)
+  grids.bin        — initial state grids (for prediction input)
+  ground_truth.bin — raw ground truth (for validation)
+[2026-03-22 15:15:04]   Next check in 120 min
+[2026-03-22 17:15:04] ── Checking for active round ──
+[2026-03-22 17:15:05]   No active round
+[2026-03-22 17:15:05]   Fetching ground truth for completed round 23
+Fetching my-rounds...
+
+Round  Status      Score   Rank     Seeds  Queries
+─────  ──────────  ──────  ───────  ─────  ───────
+  23   completed     51.1  189/285  5/5  50/50
+  22   completed     73.3  163/278  5/5  50/50
+  21   completed     82.3  136/225  5/5  50/50
+  20   completed     60.7  153/181  4/5  50/50
+  19   completed     58.9  161/228  5/5  50/50
+  18   completed     47.7  179/265  5/5  50/50
+  17   completed     72.8  156/283  5/5  50/50
+  16   completed     80.6  100/272  5/5  50/50
+  15   completed     85.5  102/262  5/5  50/50
+  14   completed     57.3  141/244  5/5  50/50
+  13   completed        -        -  0/5  0/50
+  12   completed        -        -  0/5  0/50
+  11   completed        -        -  0/5  0/50
+  10   completed     68.7  103/238  5/5  50/50
+  9    completed     90.9   21/221  5/5  50/50
+  8    completed     71.6   87/214  5/5  50/50
+  7    completed     59.8   88/199  5/5  50/50
+  6    completed        -        -  0/5  0/50
+  5    completed        -        -  0/5  1/50
+  4    completed        -        -  0/5  0/50
+
+Saved to data/my-rounds.json
+
+  [r23] initial states already exist, skipping
+  [r22] initial states already exist, skipping
+  [r21] initial states already exist, skipping
+  [r20] initial states already exist, skipping
+  [r19] initial states already exist, skipping
+  [r18] initial states already exist, skipping
+  [r17] initial states already exist, skipping
+  [r16] initial states already exist, skipping
+  [r15] initial states already exist, skipping
+  [r14] initial states already exist, skipping
+  [r13] initial states already exist, skipping
+  [r12] initial states already exist, skipping
+  [r11] initial states already exist, skipping
+  [r10] initial states already exist, skipping
+  [r9] initial states already exist, skipping
+  [r8] initial states already exist, skipping
+  [r7] initial states already exist, skipping
+  [r6] initial states already exist, skipping
+  [r5] initial states already exist, skipping
+  [r4] initial states already exist, skipping
+
+Fetching analysis for 20 completed round(s)...
+
+  [r23.s0] already exists, skipping
+  [r23.s1] already exists, skipping
+  [r23.s2] already exists, skipping
+  [r23.s3] already exists, skipping
+  [r23.s4] already exists, skipping
+  [r22.s0] already exists, skipping
+  [r22.s1] already exists, skipping
+  [r22.s2] already exists, skipping
+  [r22.s3] already exists, skipping
+  [r22.s4] already exists, skipping
+  [r21.s0] already exists, skipping
+  [r21.s1] already exists, skipping
+  [r21.s2] already exists, skipping
+  [r21.s3] already exists, skipping
+  [r21.s4] already exists, skipping
+  [r20.s0] already exists, skipping
+  [r20.s1] already exists, skipping
+  [r20.s2] already exists, skipping
+  [r20.s3] already exists, skipping
+  [r20.s4] already exists, skipping
+  [r19.s0] already exists, skipping
+  [r19.s1] already exists, skipping
+  [r19.s2] already exists, skipping
+  [r19.s3] already exists, skipping
+  [r19.s4] already exists, skipping
+  [r18.s0] already exists, skipping
+  [r18.s1] already exists, skipping
+  [r18.s2] already exists, skipping
+  [r18.s3] already exists, skipping
+  [r18.s4] already exists, skipping
+  [r17.s0] already exists, skipping
+  [r17.s1] already exists, skipping
+  [r17.s2] already exists, skipping
+  [r17.s3] already exists, skipping
+  [r17.s4] already exists, skipping
+  [r16.s0] already exists, skipping
+  [r16.s1] already exists, skipping
+  [r16.s2] already exists, skipping
+  [r16.s3] already exists, skipping
+  [r16.s4] already exists, skipping
+  [r15.s0] already exists, skipping
+  [r15.s1] already exists, skipping
+  [r15.s2] already exists, skipping
+  [r15.s3] already exists, skipping
+  [r15.s4] already exists, skipping
+  [r14.s0] already exists, skipping
+  [r14.s1] already exists, skipping
+  [r14.s2] already exists, skipping
+  [r14.s3] already exists, skipping
+  [r14.s4] already exists, skipping
+  [r13.s0] already exists, skipping
+  [r13.s1] already exists, skipping
+  [r13.s2] already exists, skipping
+  [r13.s3] already exists, skipping
+  [r13.s4] already exists, skipping
+  [r12.s0] already exists, skipping
+  [r12.s1] already exists, skipping
+  [r12.s2] already exists, skipping
+  [r12.s3] already exists, skipping
+  [r12.s4] already exists, skipping
+  [r11.s0] already exists, skipping
+  [r11.s1] already exists, skipping
+  [r11.s2] already exists, skipping
+  [r11.s3] already exists, skipping
+  [r11.s4] already exists, skipping
+  [r10.s0] already exists, skipping
+  [r10.s1] already exists, skipping
+  [r10.s2] already exists, skipping
+  [r10.s3] already exists, skipping
+  [r10.s4] already exists, skipping
+  [r9.s0] already exists, skipping
+  [r9.s1] already exists, skipping
+  [r9.s2] already exists, skipping
+  [r9.s3] already exists, skipping
+  [r9.s4] already exists, skipping
+  [r8.s0] already exists, skipping
+  [r8.s1] already exists, skipping
+  [r8.s2] already exists, skipping
+  [r8.s3] already exists, skipping
+  [r8.s4] already exists, skipping
+  [r7.s0] already exists, skipping
+  [r7.s1] already exists, skipping
+  [r7.s2] already exists, skipping
+  [r7.s3] already exists, skipping
+  [r7.s4] already exists, skipping
+  [r6.s0] already exists, skipping
+  [r6.s1] already exists, skipping
+  [r6.s2] already exists, skipping
+  [r6.s3] already exists, skipping
+  [r6.s4] already exists, skipping
+  [r5.s0] already exists, skipping
+  [r5.s1] already exists, skipping
+  [r5.s2] already exists, skipping
+  [r5.s3] already exists, skipping
+  [r5.s4] already exists, skipping
+  [r4.s0] already exists, skipping
+  [r4.s1] already exists, skipping
+  [r4.s2] already exists, skipping
+  [r4.s3] already exists, skipping
+  [r4.s4] already exists, skipping
+
+Done. Training data structure:
+  data/initial/r{N}.json    — initial states (input)
+  data/analysis/r{N}/s{M}.json — ground truth (target)
+Converting JSON -> bin...
+
+  [r14.s1] 40x40 = 1600 cells (1344 dynamic)
+  [r14.s0] 40x40 = 1600 cells (1375 dynamic)
+  [r14.s3] 40x40 = 1600 cells (1363 dynamic)
+  [r14.s2] 40x40 = 1600 cells (1296 dynamic)
+  [r14.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r13.s1] 40x40 = 1600 cells (1347 dynamic)
+  [r13.s0] 40x40 = 1600 cells (1402 dynamic)
+  [r13.s3] 40x40 = 1600 cells (1343 dynamic)
+  [r13.s2] 40x40 = 1600 cells (1349 dynamic)
+  [r13.s4] 40x40 = 1600 cells (1372 dynamic)
+  [r22.s1] 40x40 = 1600 cells (657 dynamic)
+  [r22.s0] 40x40 = 1600 cells (630 dynamic)
+  [r22.s3] 40x40 = 1600 cells (791 dynamic)
+  [r22.s2] 40x40 = 1600 cells (676 dynamic)
+  [r22.s4] 40x40 = 1600 cells (756 dynamic)
+  [r23.s1] 40x40 = 1600 cells (897 dynamic)
+  [r23.s0] 40x40 = 1600 cells (912 dynamic)
+  [r23.s3] 40x40 = 1600 cells (980 dynamic)
+  [r23.s2] 40x40 = 1600 cells (929 dynamic)
+  [r23.s4] 40x40 = 1600 cells (809 dynamic)
+  [r12.s1] 40x40 = 1600 cells (747 dynamic)
+  [r12.s0] 40x40 = 1600 cells (848 dynamic)
+  [r12.s3] 40x40 = 1600 cells (915 dynamic)
+  [r12.s2] 40x40 = 1600 cells (877 dynamic)
+  [r12.s4] 40x40 = 1600 cells (833 dynamic)
+  [r15.s1] 40x40 = 1600 cells (1381 dynamic)
+  [r15.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r15.s3] 40x40 = 1600 cells (1405 dynamic)
+  [r15.s2] 40x40 = 1600 cells (1390 dynamic)
+  [r15.s4] 40x40 = 1600 cells (1398 dynamic)
+  [r7.s1] 40x40 = 1600 cells (1036 dynamic)
+  [r7.s0] 40x40 = 1600 cells (946 dynamic)
+  [r7.s3] 40x40 = 1600 cells (977 dynamic)
+  [r7.s2] 40x40 = 1600 cells (1014 dynamic)
+  [r7.s4] 40x40 = 1600 cells (1032 dynamic)
+  [r9.s1] 40x40 = 1600 cells (1375 dynamic)
+  [r9.s0] 40x40 = 1600 cells (1324 dynamic)
+  [r9.s3] 40x40 = 1600 cells (1390 dynamic)
+  [r9.s2] 40x40 = 1600 cells (1407 dynamic)
+  [r9.s4] 40x40 = 1600 cells (1380 dynamic)
+  [r8.s1] 40x40 = 1600 cells (1228 dynamic)
+  [r8.s0] 40x40 = 1600 cells (1329 dynamic)
+  [r8.s3] 40x40 = 1600 cells (1206 dynamic)
+  [r8.s2] 40x40 = 1600 cells (1305 dynamic)
+  [r8.s4] 40x40 = 1600 cells (1168 dynamic)
+  [r1.s1] 40x40 = 1600 cells (1365 dynamic)
+  [r1.s0] 40x40 = 1600 cells (1312 dynamic)
+  [r1.s3] 40x40 = 1600 cells (1394 dynamic)
+  [r1.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r1.s4] 40x40 = 1600 cells (1286 dynamic)
+  [r6.s1] 40x40 = 1600 cells (1394 dynamic)
+  [r6.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r6.s3] 40x40 = 1600 cells (1425 dynamic)
+  [r6.s2] 40x40 = 1600 cells (1350 dynamic)
+  [r6.s4] 40x40 = 1600 cells (1418 dynamic)
+  [r10.s1] 40x40 = 1600 cells (713 dynamic)
+  [r10.s0] 40x40 = 1600 cells (651 dynamic)
+  [r10.s3] 40x40 = 1600 cells (747 dynamic)
+  [r10.s2] 40x40 = 1600 cells (626 dynamic)
+  [r10.s4] 40x40 = 1600 cells (673 dynamic)
+  [r17.s1] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s0] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s3] 40x40 = 1600 cells (1377 dynamic)
+  [r17.s2] 40x40 = 1600 cells (1378 dynamic)
+  [r17.s4] 40x40 = 1600 cells (1385 dynamic)
+  [r21.s1] 40x40 = 1600 cells (1213 dynamic)
+  [r21.s0] 40x40 = 1600 cells (1113 dynamic)
+  [r21.s3] 40x40 = 1600 cells (1259 dynamic)
+  [r21.s2] 40x40 = 1600 cells (1093 dynamic)
+  [r21.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r19.s1] 40x40 = 1600 cells (1069 dynamic)
+  [r19.s0] 40x40 = 1600 cells (1176 dynamic)
+  [r19.s3] 40x40 = 1600 cells (1072 dynamic)
+  [r19.s2] 40x40 = 1600 cells (1067 dynamic)
+  [r19.s4] 40x40 = 1600 cells (947 dynamic)
+  [r18.s1] 40x40 = 1600 cells (1353 dynamic)
+  [r18.s0] 40x40 = 1600 cells (1379 dynamic)
+  [r18.s3] 40x40 = 1600 cells (1240 dynamic)
+  [r18.s2] 40x40 = 1600 cells (1364 dynamic)
+  [r18.s4] 40x40 = 1600 cells (1395 dynamic)
+  [r20.s1] 40x40 = 1600 cells (1060 dynamic)
+  [r20.s0] 40x40 = 1600 cells (992 dynamic)
+  [r20.s3] 40x40 = 1600 cells (1068 dynamic)
+  [r20.s2] 40x40 = 1600 cells (1084 dynamic)
+  [r20.s4] 40x40 = 1600 cells (1183 dynamic)
+  [r16.s1] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s0] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s3] 40x40 = 1600 cells (917 dynamic)
+  [r16.s2] 40x40 = 1600 cells (1127 dynamic)
+  [r16.s4] 40x40 = 1600 cells (1052 dynamic)
+  [r11.s1] 40x40 = 1600 cells (1317 dynamic)
+  [r11.s0] 40x40 = 1600 cells (1361 dynamic)
+  [r11.s3] 40x40 = 1600 cells (1357 dynamic)
+  [r11.s2] 40x40 = 1600 cells (1373 dynamic)
+  [r11.s4] 40x40 = 1600 cells (1320 dynamic)
+  [r3.s1] 40x40 = 1600 cells (586 dynamic)
+  [r3.s0] 40x40 = 1600 cells (551 dynamic)
+  [r3.s3] 40x40 = 1600 cells (553 dynamic)
+  [r3.s2] 40x40 = 1600 cells (548 dynamic)
+  [r3.s4] 40x40 = 1600 cells (536 dynamic)
+  [r4.s1] 40x40 = 1600 cells (1379 dynamic)
+  [r4.s0] 40x40 = 1600 cells (1351 dynamic)
+  [r4.s3] 40x40 = 1600 cells (1328 dynamic)
+  [r4.s2] 40x40 = 1600 cells (1317 dynamic)
+  [r4.s4] 40x40 = 1600 cells (1388 dynamic)
+  [r5.s1] 40x40 = 1600 cells (1188 dynamic)
+  [r5.s0] 40x40 = 1600 cells (1260 dynamic)
+  [r5.s3] 40x40 = 1600 cells (1230 dynamic)
+  [r5.s2] 40x40 = 1600 cells (1280 dynamic)
+  [r5.s4] 40x40 = 1600 cells (1274 dynamic)
+  [r2.s1] 40x40 = 1600 cells (1390 dynamic)
+  [r2.s0] 40x40 = 1600 cells (1415 dynamic)
+  [r2.s3] 40x40 = 1600 cells (1354 dynamic)
+  [r2.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r2.s4] 40x40 = 1600 cells (1397 dynamic)
+
+Training: 184000 samples (133065 dynamic) -> ../simulation/data/training.bin
+
+Grids: 230 entries -> ../simulation/data/grids.bin
+Ground truth: 115 entries -> ../simulation/data/ground_truth.bin
+
+Done. Files in simulation/data/:
+  training.bin     — features + ground truth (for model)
+  grids.bin        — initial state grids (for prediction input)
+  ground_truth.bin — raw ground truth (for validation)
+[2026-03-22 17:15:06]   Next check in 120 min
