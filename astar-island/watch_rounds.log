@@ -17256,3 +17256,1486 @@ Done. Files in simulation/data/:
   grids.bin        — initial state grids (for prediction input)
   ground_truth.bin — raw ground truth (for validation)
 [2026-03-22 19:15:08]   Next check in 120 min
+[2026-03-23 08:11:21] ── Checking for active round ──
+[2026-03-23 08:11:22]   Active: Round 1 | 0 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-23 08:11:22]   >>> NEW ROUND 1 — running full pipeline
+==========================================
+  Round 1 — Prepare & Submit
+==========================================
+  Rollouts: 1000
+  Queries: 10/seed (50 total)
+  Viewport: 10×10
+  Smart query allocation: ON
+
+=== 1. Fetching latest data ===
+Fetching my-rounds...
+
+Round  Status      Score   Rank     Seeds  Queries
+─────  ──────────  ──────  ───────  ─────  ───────
+  1    active           -        -  0/5  0/50
+  23   completed     51.1  189/285  5/5  50/50
+  22   completed     73.3  163/278  5/5  50/50
+  21   completed     82.3  136/225  5/5  50/50
+  20   completed     60.7  153/181  4/5  50/50
+  19   completed     58.9  161/228  5/5  50/50
+  18   completed     47.7  179/265  5/5  50/50
+  17   completed     72.8  156/283  5/5  50/50
+  16   completed     80.6  100/272  5/5  50/50
+  15   completed     85.5  102/262  5/5  50/50
+  14   completed     57.3  141/244  5/5  50/50
+  13   completed        -        -  0/5  0/50
+  12   completed        -        -  0/5  0/50
+  11   completed        -        -  0/5  0/50
+  10   completed     68.7  103/238  5/5  50/50
+  9    completed     90.9   21/221  5/5  50/50
+  8    completed     71.6   87/214  5/5  50/50
+  7    completed     59.8   88/199  5/5  50/50
+  6    completed        -        -  0/5  0/50
+  5    completed        -        -  0/5  1/50
+
+Saved to data/my-rounds.json
+
+  [r1] initial states already exist, skipping
+  [r23] initial states already exist, skipping
+  [r22] initial states already exist, skipping
+  [r21] initial states already exist, skipping
+  [r20] initial states already exist, skipping
+  [r19] initial states already exist, skipping
+  [r18] initial states already exist, skipping
+  [r17] initial states already exist, skipping
+  [r16] initial states already exist, skipping
+  [r15] initial states already exist, skipping
+  [r14] initial states already exist, skipping
+  [r13] initial states already exist, skipping
+  [r12] initial states already exist, skipping
+  [r11] initial states already exist, skipping
+  [r10] initial states already exist, skipping
+  [r9] initial states already exist, skipping
+  [r8] initial states already exist, skipping
+  [r7] initial states already exist, skipping
+  [r6] initial states already exist, skipping
+  [r5] initial states already exist, skipping
+
+Fetching analysis for 19 completed round(s)...
+
+  [r23.s0] already exists, skipping
+  [r23.s1] already exists, skipping
+  [r23.s2] already exists, skipping
+  [r23.s3] already exists, skipping
+  [r23.s4] already exists, skipping
+  [r22.s0] already exists, skipping
+  [r22.s1] already exists, skipping
+  [r22.s2] already exists, skipping
+  [r22.s3] already exists, skipping
+  [r22.s4] already exists, skipping
+  [r21.s0] already exists, skipping
+  [r21.s1] already exists, skipping
+  [r21.s2] already exists, skipping
+  [r21.s3] already exists, skipping
+  [r21.s4] already exists, skipping
+  [r20.s0] already exists, skipping
+  [r20.s1] already exists, skipping
+  [r20.s2] already exists, skipping
+  [r20.s3] already exists, skipping
+  [r20.s4] already exists, skipping
+  [r19.s0] already exists, skipping
+  [r19.s1] already exists, skipping
+  [r19.s2] already exists, skipping
+  [r19.s3] already exists, skipping
+  [r19.s4] already exists, skipping
+  [r18.s0] already exists, skipping
+  [r18.s1] already exists, skipping
+  [r18.s2] already exists, skipping
+  [r18.s3] already exists, skipping
+  [r18.s4] already exists, skipping
+  [r17.s0] already exists, skipping
+  [r17.s1] already exists, skipping
+  [r17.s2] already exists, skipping
+  [r17.s3] already exists, skipping
+  [r17.s4] already exists, skipping
+  [r16.s0] already exists, skipping
+  [r16.s1] already exists, skipping
+  [r16.s2] already exists, skipping
+  [r16.s3] already exists, skipping
+  [r16.s4] already exists, skipping
+  [r15.s0] already exists, skipping
+  [r15.s1] already exists, skipping
+  [r15.s2] already exists, skipping
+  [r15.s3] already exists, skipping
+  [r15.s4] already exists, skipping
+  [r14.s0] already exists, skipping
+  [r14.s1] already exists, skipping
+  [r14.s2] already exists, skipping
+  [r14.s3] already exists, skipping
+  [r14.s4] already exists, skipping
+  [r13.s0] already exists, skipping
+  [r13.s1] already exists, skipping
+  [r13.s2] already exists, skipping
+  [r13.s3] already exists, skipping
+  [r13.s4] already exists, skipping
+  [r12.s0] already exists, skipping
+  [r12.s1] already exists, skipping
+  [r12.s2] already exists, skipping
+  [r12.s3] already exists, skipping
+  [r12.s4] already exists, skipping
+  [r11.s0] already exists, skipping
+  [r11.s1] already exists, skipping
+  [r11.s2] already exists, skipping
+  [r11.s3] already exists, skipping
+  [r11.s4] already exists, skipping
+  [r10.s0] already exists, skipping
+  [r10.s1] already exists, skipping
+  [r10.s2] already exists, skipping
+  [r10.s3] already exists, skipping
+  [r10.s4] already exists, skipping
+  [r9.s0] already exists, skipping
+  [r9.s1] already exists, skipping
+  [r9.s2] already exists, skipping
+  [r9.s3] already exists, skipping
+  [r9.s4] already exists, skipping
+  [r8.s0] already exists, skipping
+  [r8.s1] already exists, skipping
+  [r8.s2] already exists, skipping
+  [r8.s3] already exists, skipping
+  [r8.s4] already exists, skipping
+  [r7.s0] already exists, skipping
+  [r7.s1] already exists, skipping
+  [r7.s2] already exists, skipping
+  [r7.s3] already exists, skipping
+  [r7.s4] already exists, skipping
+  [r6.s0] already exists, skipping
+  [r6.s1] already exists, skipping
+  [r6.s2] already exists, skipping
+  [r6.s3] already exists, skipping
+  [r6.s4] already exists, skipping
+  [r5.s0] already exists, skipping
+  [r5.s1] already exists, skipping
+  [r5.s2] already exists, skipping
+  [r5.s3] already exists, skipping
+  [r5.s4] already exists, skipping
+
+Done. Training data structure:
+  data/initial/r{N}.json    — initial states (input)
+  data/analysis/r{N}/s{M}.json — ground truth (target)
+
+=== 2. Converting to binary ===
+Converting JSON -> bin...
+
+  [r14.s1] 40x40 = 1600 cells (1344 dynamic)
+  [r14.s0] 40x40 = 1600 cells (1375 dynamic)
+  [r14.s3] 40x40 = 1600 cells (1363 dynamic)
+  [r14.s2] 40x40 = 1600 cells (1296 dynamic)
+  [r14.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r13.s1] 40x40 = 1600 cells (1347 dynamic)
+  [r13.s0] 40x40 = 1600 cells (1402 dynamic)
+  [r13.s3] 40x40 = 1600 cells (1343 dynamic)
+  [r13.s2] 40x40 = 1600 cells (1349 dynamic)
+  [r13.s4] 40x40 = 1600 cells (1372 dynamic)
+  [r22.s1] 40x40 = 1600 cells (657 dynamic)
+  [r22.s0] 40x40 = 1600 cells (630 dynamic)
+  [r22.s3] 40x40 = 1600 cells (791 dynamic)
+  [r22.s2] 40x40 = 1600 cells (676 dynamic)
+  [r22.s4] 40x40 = 1600 cells (756 dynamic)
+  [r23.s1] 40x40 = 1600 cells (897 dynamic)
+  [r23.s0] 40x40 = 1600 cells (912 dynamic)
+  [r23.s3] 40x40 = 1600 cells (980 dynamic)
+  [r23.s2] 40x40 = 1600 cells (929 dynamic)
+  [r23.s4] 40x40 = 1600 cells (809 dynamic)
+  [r12.s1] 40x40 = 1600 cells (747 dynamic)
+  [r12.s0] 40x40 = 1600 cells (848 dynamic)
+  [r12.s3] 40x40 = 1600 cells (915 dynamic)
+  [r12.s2] 40x40 = 1600 cells (877 dynamic)
+  [r12.s4] 40x40 = 1600 cells (833 dynamic)
+  [r15.s1] 40x40 = 1600 cells (1381 dynamic)
+  [r15.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r15.s3] 40x40 = 1600 cells (1405 dynamic)
+  [r15.s2] 40x40 = 1600 cells (1390 dynamic)
+  [r15.s4] 40x40 = 1600 cells (1398 dynamic)
+  [r7.s1] 40x40 = 1600 cells (1036 dynamic)
+  [r7.s0] 40x40 = 1600 cells (946 dynamic)
+  [r7.s3] 40x40 = 1600 cells (977 dynamic)
+  [r7.s2] 40x40 = 1600 cells (1014 dynamic)
+  [r7.s4] 40x40 = 1600 cells (1032 dynamic)
+  [r9.s1] 40x40 = 1600 cells (1375 dynamic)
+  [r9.s0] 40x40 = 1600 cells (1324 dynamic)
+  [r9.s3] 40x40 = 1600 cells (1390 dynamic)
+  [r9.s2] 40x40 = 1600 cells (1407 dynamic)
+  [r9.s4] 40x40 = 1600 cells (1380 dynamic)
+  [r8.s1] 40x40 = 1600 cells (1228 dynamic)
+  [r8.s0] 40x40 = 1600 cells (1329 dynamic)
+  [r8.s3] 40x40 = 1600 cells (1206 dynamic)
+  [r8.s2] 40x40 = 1600 cells (1305 dynamic)
+  [r8.s4] 40x40 = 1600 cells (1168 dynamic)
+  [r1.s1] 40x40 = 1600 cells (1365 dynamic)
+  [r1.s0] 40x40 = 1600 cells (1312 dynamic)
+  [r1.s3] 40x40 = 1600 cells (1394 dynamic)
+  [r1.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r1.s4] 40x40 = 1600 cells (1286 dynamic)
+  [r6.s1] 40x40 = 1600 cells (1394 dynamic)
+  [r6.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r6.s3] 40x40 = 1600 cells (1425 dynamic)
+  [r6.s2] 40x40 = 1600 cells (1350 dynamic)
+  [r6.s4] 40x40 = 1600 cells (1418 dynamic)
+  [r10.s1] 40x40 = 1600 cells (713 dynamic)
+  [r10.s0] 40x40 = 1600 cells (651 dynamic)
+  [r10.s3] 40x40 = 1600 cells (747 dynamic)
+  [r10.s2] 40x40 = 1600 cells (626 dynamic)
+  [r10.s4] 40x40 = 1600 cells (673 dynamic)
+  [r17.s1] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s0] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s3] 40x40 = 1600 cells (1377 dynamic)
+  [r17.s2] 40x40 = 1600 cells (1378 dynamic)
+  [r17.s4] 40x40 = 1600 cells (1385 dynamic)
+  [r21.s1] 40x40 = 1600 cells (1213 dynamic)
+  [r21.s0] 40x40 = 1600 cells (1113 dynamic)
+  [r21.s3] 40x40 = 1600 cells (1259 dynamic)
+  [r21.s2] 40x40 = 1600 cells (1093 dynamic)
+  [r21.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r19.s1] 40x40 = 1600 cells (1069 dynamic)
+  [r19.s0] 40x40 = 1600 cells (1176 dynamic)
+  [r19.s3] 40x40 = 1600 cells (1072 dynamic)
+  [r19.s2] 40x40 = 1600 cells (1067 dynamic)
+  [r19.s4] 40x40 = 1600 cells (947 dynamic)
+  [r18.s1] 40x40 = 1600 cells (1353 dynamic)
+  [r18.s0] 40x40 = 1600 cells (1379 dynamic)
+  [r18.s3] 40x40 = 1600 cells (1240 dynamic)
+  [r18.s2] 40x40 = 1600 cells (1364 dynamic)
+  [r18.s4] 40x40 = 1600 cells (1395 dynamic)
+  [r20.s1] 40x40 = 1600 cells (1060 dynamic)
+  [r20.s0] 40x40 = 1600 cells (992 dynamic)
+  [r20.s3] 40x40 = 1600 cells (1068 dynamic)
+  [r20.s2] 40x40 = 1600 cells (1084 dynamic)
+  [r20.s4] 40x40 = 1600 cells (1183 dynamic)
+  [r16.s1] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s0] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s3] 40x40 = 1600 cells (917 dynamic)
+  [r16.s2] 40x40 = 1600 cells (1127 dynamic)
+  [r16.s4] 40x40 = 1600 cells (1052 dynamic)
+  [r11.s1] 40x40 = 1600 cells (1317 dynamic)
+  [r11.s0] 40x40 = 1600 cells (1361 dynamic)
+  [r11.s3] 40x40 = 1600 cells (1357 dynamic)
+  [r11.s2] 40x40 = 1600 cells (1373 dynamic)
+  [r11.s4] 40x40 = 1600 cells (1320 dynamic)
+  [r3.s1] 40x40 = 1600 cells (586 dynamic)
+  [r3.s0] 40x40 = 1600 cells (551 dynamic)
+  [r3.s3] 40x40 = 1600 cells (553 dynamic)
+  [r3.s2] 40x40 = 1600 cells (548 dynamic)
+  [r3.s4] 40x40 = 1600 cells (536 dynamic)
+  [r4.s1] 40x40 = 1600 cells (1379 dynamic)
+  [r4.s0] 40x40 = 1600 cells (1351 dynamic)
+  [r4.s3] 40x40 = 1600 cells (1328 dynamic)
+  [r4.s2] 40x40 = 1600 cells (1317 dynamic)
+  [r4.s4] 40x40 = 1600 cells (1388 dynamic)
+  [r5.s1] 40x40 = 1600 cells (1188 dynamic)
+  [r5.s0] 40x40 = 1600 cells (1260 dynamic)
+  [r5.s3] 40x40 = 1600 cells (1230 dynamic)
+  [r5.s2] 40x40 = 1600 cells (1280 dynamic)
+  [r5.s4] 40x40 = 1600 cells (1274 dynamic)
+  [r2.s1] 40x40 = 1600 cells (1390 dynamic)
+  [r2.s0] 40x40 = 1600 cells (1415 dynamic)
+  [r2.s3] 40x40 = 1600 cells (1354 dynamic)
+  [r2.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r2.s4] 40x40 = 1600 cells (1397 dynamic)
+
+Training: 184000 samples (133065 dynamic) -> ../simulation/data/training.bin
+
+Grids: 230 entries -> ../simulation/data/grids.bin
+Ground truth: 115 entries -> ../simulation/data/ground_truth.bin
+
+Done. Files in simulation/data/:
+  training.bin     — features + ground truth (for model)
+  grids.bin        — initial state grids (for prediction input)
+  ground_truth.bin — raw ground truth (for validation)
+
+=== 3. Checking binaries ===
+  simulate: OK
+
+=== 4. Sim predictions (1000 rollouts) ===
+  Using calibrated params
+  [R1.S0] Params loaded: data/params.bin (v1 format, 160/264 bytes — new params use defaults)
+Grid [r1.s0]: 40x40
+  Initial: 29 settlements, 1 ports
+Running 1000 rollouts...
+  Rollout 100/1000  Rollout 200/1000  Rollout 300/1000  Rollout 400/1000  Rollout 500/1000  Rollout 600/1000  Rollout 700/1000  Rollout 800/1000  Rollout 900/1000  Rollout 1000/1000
+Written to data/pred_sim_r1_s0.bin
+
+Validation vs ground truth:
+  Dynamic cells: 1293
+  Weighted KL:   0.056335
+  Score:         84.45 / 100
+  [R1.S1] Params loaded: data/params.bin (v1 format, 160/264 bytes — new params use defaults)
+Grid [r1.s1]: 40x40
+  Initial: 51 settlements, 1 ports
+Running 1000 rollouts...
+  Rollout 100/1000  Rollout 200/1000  Rollout 300/1000  Rollout 400/1000  Rollout 500/1000  Rollout 600/1000  Rollout 700/1000  Rollout 800/1000  Rollout 900/1000  Rollout 1000/1000
+Written to data/pred_sim_r1_s1.bin
+
+Validation vs ground truth:
+  Dynamic cells: 1326
+  Weighted KL:   0.059328
+  Score:         83.70 / 100
+  [R1.S2] Params loaded: data/params.bin (v1 format, 160/264 bytes — new params use defaults)
+Grid [r1.s2]: 40x40
+  Initial: 33 settlements, 2 ports
+Running 1000 rollouts...
+  Rollout 100/1000  Rollout 200/1000  Rollout 300/1000  Rollout 400/1000  Rollout 500/1000  Rollout 600/1000  Rollout 700/1000  Rollout 800/1000  Rollout 900/1000  Rollout 1000/1000
+Written to data/pred_sim_r1_s2.bin
+
+Validation vs ground truth:
+  Dynamic cells: 1331
+  Weighted KL:   0.059615
+  Score:         83.62 / 100
+  [R1.S3] Params loaded: data/params.bin (v1 format, 160/264 bytes — new params use defaults)
+Grid [r1.s3]: 40x40
+  Initial: 59 settlements, 1 ports
+Running 1000 rollouts...
+  Rollout 100/1000  Rollout 200/1000  Rollout 300/1000  Rollout 400/1000  Rollout 500/1000  Rollout 600/1000  Rollout 700/1000  Rollout 800/1000  Rollout 900/1000  Rollout 1000/1000
+Written to data/pred_sim_r1_s3.bin
+
+Validation vs ground truth:
+  Dynamic cells: 1366
+  Weighted KL:   0.054024
+  Score:         85.04 / 100
+  [R1.S4] Params loaded: data/params.bin (v1 format, 160/264 bytes — new params use defaults)
+Grid [r1.s4]: 40x40
+  Initial: 29 settlements, 2 ports
+Running 1000 rollouts...
+  Rollout 100/1000  Rollout 200/1000  Rollout 300/1000  Rollout 400/1000  Rollout 500/1000  Rollout 600/1000  Rollout 700/1000  Rollout 800/1000  Rollout 900/1000  Rollout 1000/1000
+Written to data/pred_sim_r1_s4.bin
+
+Validation vs ground truth:
+  Dynamic cells: 1274
+  Weighted KL:   0.060837
+  Score:         83.32 / 100
+
+=== 4b. Bucket predictions ===
+  [R1.S0] Training: 184000 samples (v2)
+Training: 184000 used
+Buckets: 582 fine, 53 coarse
+Grid [r1.s0]: 40x40
+Predictions: 1598 fine, 2 coarse, 0 fallback
+
+Validation vs ground truth:
+  Dynamic cells: 1293
+  Weighted KL:   0.086189
+  Score:         77.22 / 100
+Written to data/pred_bucket_r1_s0.bin
+  [R1.S1] Training: 184000 samples (v2)
+Training: 184000 used
+Buckets: 582 fine, 53 coarse
+Grid [r1.s1]: 40x40
+Predictions: 1594 fine, 6 coarse, 0 fallback
+
+Validation vs ground truth:
+  Dynamic cells: 1326
+  Weighted KL:   0.066066
+  Score:         82.02 / 100
+Written to data/pred_bucket_r1_s1.bin
+  [R1.S2] Training: 184000 samples (v2)
+Training: 184000 used
+Buckets: 582 fine, 53 coarse
+Grid [r1.s2]: 40x40
+Predictions: 1600 fine, 0 coarse, 0 fallback
+
+Validation vs ground truth:
+  Dynamic cells: 1331
+  Weighted KL:   0.075635
+  Score:         79.70 / 100
+Written to data/pred_bucket_r1_s2.bin
+  [R1.S3] Training: 184000 samples (v2)
+Training: 184000 used
+Buckets: 582 fine, 53 coarse
+Grid [r1.s3]: 40x40
+Predictions: 1588 fine, 12 coarse, 0 fallback
+
+Validation vs ground truth:
+  Dynamic cells: 1366
+  Weighted KL:   0.056078
+  Score:         84.52 / 100
+Written to data/pred_bucket_r1_s3.bin
+  [R1.S4] Training: 184000 samples (v2)
+Training: 184000 used
+Buckets: 582 fine, 53 coarse
+Grid [r1.s4]: 40x40
+Predictions: 1596 fine, 4 coarse, 0 fallback
+
+Validation vs ground truth:
+  Dynamic cells: 1274
+  Weighted KL:   0.086563
+  Score:         77.13 / 100
+Written to data/pred_bucket_r1_s4.bin
+
+=== 4c. MLP predictions ===
+  [R1.S0] Training: 184000 samples (v2)
+Training MLP: 176000 samples, 8000 excluded (round 1)
+  Architecture: 23 → 64 → 64 → 6
+  Epochs: 15, Adam LR: 0.0010, Batch: 256
+  Epoch   1/15  loss=0.155832
+  Epoch  11/15  loss=0.083044
+  Epoch  15/15  loss=0.081411
+Grid [r1.s0]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1293
+  Weighted KL:   0.079557
+  Score:         78.77 / 100
+Written to data/pred_mlp_r1_s0.bin
+  [R1.S1] Training: 184000 samples (v2)
+Training MLP: 176000 samples, 8000 excluded (round 1)
+  Architecture: 23 → 64 → 64 → 6
+  Epochs: 15, Adam LR: 0.0010, Batch: 256
+  Epoch   1/15  loss=0.155832
+  Epoch  11/15  loss=0.083044
+  Epoch  15/15  loss=0.081411
+Grid [r1.s1]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1326
+  Weighted KL:   0.053114
+  Score:         85.27 / 100
+Written to data/pred_mlp_r1_s1.bin
+  [R1.S2] Training: 184000 samples (v2)
+Training MLP: 176000 samples, 8000 excluded (round 1)
+  Architecture: 23 → 64 → 64 → 6
+  Epochs: 15, Adam LR: 0.0010, Batch: 256
+  Epoch   1/15  loss=0.155832
+  Epoch  11/15  loss=0.083044
+  Epoch  15/15  loss=0.081411
+Grid [r1.s2]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1331
+  Weighted KL:   0.134778
+  Score:         66.74 / 100
+Written to data/pred_mlp_r1_s2.bin
+  [R1.S3] Training: 184000 samples (v2)
+Training MLP: 176000 samples, 8000 excluded (round 1)
+  Architecture: 23 → 64 → 64 → 6
+  Epochs: 15, Adam LR: 0.0010, Batch: 256
+  Epoch   1/15  loss=0.155832
+  Epoch  11/15  loss=0.083044
+  Epoch  15/15  loss=0.081411
+Grid [r1.s3]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1366
+  Weighted KL:   0.068321
+  Score:         81.47 / 100
+Written to data/pred_mlp_r1_s3.bin
+  [R1.S4] Training: 184000 samples (v2)
+Training MLP: 176000 samples, 8000 excluded (round 1)
+  Architecture: 23 → 64 → 64 → 6
+  Epochs: 15, Adam LR: 0.0010, Batch: 256
+  Epoch   1/15  loss=0.155832
+  Epoch  11/15  loss=0.083044
+  Epoch  15/15  loss=0.081411
+Grid [r1.s4]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1274
+  Weighted KL:   0.172331
+  Score:         59.63 / 100
+Written to data/pred_mlp_r1_s4.bin
+
+=== 4d. CNN predictions (slim) ===
+  [R1.S0] Ground truth entries: 115
+Base training samples: 110 loaded, 5 excluded (round 1)
+Applying 8x data augmentation (4 rotations x 2 flips)...
+Augmented training samples: 880
+U-Net Architecture (channels: 16/32/64):
+  Encoder:    Conv(13->16)->IN->ReLU->Conv(16->16)->IN->ReLU -> Pool
+              Conv(16->32)->IN->ReLU->Conv(32->32)->IN->ReLU -> Pool
+  Bottleneck: Conv(32->64)->IN->ReLU->Conv(64->32)->IN->ReLU
+  Decoder:    Up->Cat(64)->Conv(64->32)->IN->ReLU->Conv(32->16)->IN->ReLU
+              Up->Cat(32)->Conv(32->16)->IN->ReLU->Conv(16->6) + Residual
+  Total parameters: 84150
+  Threads: 12
+Epochs: 30, Adam LR: 0.0010, Augmented samples: 880
+  Epoch   1/30  loss=234914.000290  (avg per dynamic cell: 0.238736)
+  Epoch   2/30  loss=129361.971470  (avg per dynamic cell: 0.131466)
+  Epoch   3/30  loss=119003.109871  (avg per dynamic cell: 0.120939)
+  Epoch   4/30  loss=116126.784325  (avg per dynamic cell: 0.118016)
+  Epoch   5/30  loss=111450.914398  (avg per dynamic cell: 0.113264)
+  Epoch   6/30  loss=109999.565899  (avg per dynamic cell: 0.111789)
+  Epoch   7/30  loss=108409.014767  (avg per dynamic cell: 0.110173)
+  Epoch   8/30  loss=109932.790625  (avg per dynamic cell: 0.111721)
+  Epoch   9/30  loss=105983.785278  (avg per dynamic cell: 0.107708)
+  Epoch  10/30  loss=105531.276871  (avg per dynamic cell: 0.107248)
+  Epoch  11/30  loss=105233.720053  (avg per dynamic cell: 0.106946)
+  Epoch  12/30  loss=103195.218962  (avg per dynamic cell: 0.104874)
+  Epoch  13/30  loss=103005.773275  (avg per dynamic cell: 0.104682)
+  Epoch  14/30  loss=101769.568010  (avg per dynamic cell: 0.103425)
+  Epoch  15/30  loss=99255.024630  (avg per dynamic cell: 0.100870)
+  Epoch  16/30  loss=97194.134808  (avg per dynamic cell: 0.098775)
+  Epoch  17/30  loss=95270.539026  (avg per dynamic cell: 0.096820)
+  Epoch  18/30  loss=89422.028290  (avg per dynamic cell: 0.090877)
+  Epoch  19/30  loss=80894.387714  (avg per dynamic cell: 0.082210)
+  Epoch  20/30  loss=72963.557287  (avg per dynamic cell: 0.074151)
+  Epoch  21/30  loss=64720.824623  (avg per dynamic cell: 0.065774)
+  Epoch  22/30  loss=59630.693768  (avg per dynamic cell: 0.060601)
+  Epoch  23/30  loss=59140.955391  (avg per dynamic cell: 0.060103)
+  Epoch  24/30  loss=56534.565842  (avg per dynamic cell: 0.057454)
+  Epoch  25/30  loss=55310.886871  (avg per dynamic cell: 0.056211)
+  Epoch  26/30  loss=53798.473547  (avg per dynamic cell: 0.054674)
+  Epoch  27/30  loss=51176.648817  (avg per dynamic cell: 0.052009)
+  Epoch  28/30  loss=49602.232870  (avg per dynamic cell: 0.050409)
+  Epoch  29/30  loss=48840.774206  (avg per dynamic cell: 0.049635)
+  Epoch  30/30  loss=48649.630405  (avg per dynamic cell: 0.049441)
+
+Predicting round 1, seed 0
+Grid [r1.s0]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1293
+  Weighted KL:   0.123236
+  Score:         69.09 / 100
+Written to data/pred_cnn_r1_s0.bin
+  [R1.S1] Ground truth entries: 115
+Base training samples: 110 loaded, 5 excluded (round 1)
+Applying 8x data augmentation (4 rotations x 2 flips)...
+Augmented training samples: 880
+U-Net Architecture (channels: 16/32/64):
+  Encoder:    Conv(13->16)->IN->ReLU->Conv(16->16)->IN->ReLU -> Pool
+              Conv(16->32)->IN->ReLU->Conv(32->32)->IN->ReLU -> Pool
+  Bottleneck: Conv(32->64)->IN->ReLU->Conv(64->32)->IN->ReLU
+  Decoder:    Up->Cat(64)->Conv(64->32)->IN->ReLU->Conv(32->16)->IN->ReLU
+              Up->Cat(32)->Conv(32->16)->IN->ReLU->Conv(16->6) + Residual
+  Total parameters: 84150
+  Threads: 12
+Epochs: 30, Adam LR: 0.0010, Augmented samples: 880
+  Epoch   1/30  loss=234914.000290  (avg per dynamic cell: 0.238736)
+  Epoch   2/30  loss=129361.971470  (avg per dynamic cell: 0.131466)
+  Epoch   3/30  loss=119003.109871  (avg per dynamic cell: 0.120939)
+  Epoch   4/30  loss=116126.784325  (avg per dynamic cell: 0.118016)
+  Epoch   5/30  loss=111450.914398  (avg per dynamic cell: 0.113264)
+  Epoch   6/30  loss=109999.565899  (avg per dynamic cell: 0.111789)
+  Epoch   7/30  loss=108409.014767  (avg per dynamic cell: 0.110173)
+  Epoch   8/30  loss=109932.790625  (avg per dynamic cell: 0.111721)
+  Epoch   9/30  loss=105983.785278  (avg per dynamic cell: 0.107708)
+  Epoch  10/30  loss=105531.276871  (avg per dynamic cell: 0.107248)
+  Epoch  11/30  loss=105233.720053  (avg per dynamic cell: 0.106946)
+  Epoch  12/30  loss=103195.218962  (avg per dynamic cell: 0.104874)
+  Epoch  13/30  loss=103005.773275  (avg per dynamic cell: 0.104682)
+  Epoch  14/30  loss=101769.568010  (avg per dynamic cell: 0.103425)
+  Epoch  15/30  loss=99255.024630  (avg per dynamic cell: 0.100870)
+  Epoch  16/30  loss=97194.134808  (avg per dynamic cell: 0.098775)
+  Epoch  17/30  loss=95270.539026  (avg per dynamic cell: 0.096820)
+  Epoch  18/30  loss=89422.028290  (avg per dynamic cell: 0.090877)
+  Epoch  19/30  loss=80894.387714  (avg per dynamic cell: 0.082210)
+  Epoch  20/30  loss=72963.557287  (avg per dynamic cell: 0.074151)
+  Epoch  21/30  loss=64720.824623  (avg per dynamic cell: 0.065774)
+  Epoch  22/30  loss=59630.693768  (avg per dynamic cell: 0.060601)
+  Epoch  23/30  loss=59140.955391  (avg per dynamic cell: 0.060103)
+  Epoch  24/30  loss=56534.565842  (avg per dynamic cell: 0.057454)
+  Epoch  25/30  loss=55310.886871  (avg per dynamic cell: 0.056211)
+  Epoch  26/30  loss=53798.473547  (avg per dynamic cell: 0.054674)
+  Epoch  27/30  loss=51176.648817  (avg per dynamic cell: 0.052009)
+  Epoch  28/30  loss=49602.232870  (avg per dynamic cell: 0.050409)
+  Epoch  29/30  loss=48840.774206  (avg per dynamic cell: 0.049635)
+  Epoch  30/30  loss=48649.630405  (avg per dynamic cell: 0.049441)
+
+Predicting round 1, seed 1
+Grid [r1.s1]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1326
+  Weighted KL:   0.054675
+  Score:         84.87 / 100
+Written to data/pred_cnn_r1_s1.bin
+  [R1.S2] Ground truth entries: 115
+Base training samples: 110 loaded, 5 excluded (round 1)
+Applying 8x data augmentation (4 rotations x 2 flips)...
+Augmented training samples: 880
+U-Net Architecture (channels: 16/32/64):
+  Encoder:    Conv(13->16)->IN->ReLU->Conv(16->16)->IN->ReLU -> Pool
+              Conv(16->32)->IN->ReLU->Conv(32->32)->IN->ReLU -> Pool
+  Bottleneck: Conv(32->64)->IN->ReLU->Conv(64->32)->IN->ReLU
+  Decoder:    Up->Cat(64)->Conv(64->32)->IN->ReLU->Conv(32->16)->IN->ReLU
+              Up->Cat(32)->Conv(32->16)->IN->ReLU->Conv(16->6) + Residual
+  Total parameters: 84150
+  Threads: 12
+Epochs: 30, Adam LR: 0.0010, Augmented samples: 880
+  Epoch   1/30  loss=234914.000290  (avg per dynamic cell: 0.238736)
+  Epoch   2/30  loss=129361.971470  (avg per dynamic cell: 0.131466)
+  Epoch   3/30  loss=119003.109871  (avg per dynamic cell: 0.120939)
+  Epoch   4/30  loss=116126.784325  (avg per dynamic cell: 0.118016)
+  Epoch   5/30  loss=111450.914398  (avg per dynamic cell: 0.113264)
+  Epoch   6/30  loss=109999.565899  (avg per dynamic cell: 0.111789)
+  Epoch   7/30  loss=108409.014767  (avg per dynamic cell: 0.110173)
+  Epoch   8/30  loss=109932.790625  (avg per dynamic cell: 0.111721)
+  Epoch   9/30  loss=105983.785278  (avg per dynamic cell: 0.107708)
+  Epoch  10/30  loss=105531.276871  (avg per dynamic cell: 0.107248)
+  Epoch  11/30  loss=105233.720053  (avg per dynamic cell: 0.106946)
+  Epoch  12/30  loss=103195.218962  (avg per dynamic cell: 0.104874)
+  Epoch  13/30  loss=103005.773275  (avg per dynamic cell: 0.104682)
+  Epoch  14/30  loss=101769.568010  (avg per dynamic cell: 0.103425)
+  Epoch  15/30  loss=99255.024630  (avg per dynamic cell: 0.100870)
+  Epoch  16/30  loss=97194.134808  (avg per dynamic cell: 0.098775)
+  Epoch  17/30  loss=95270.539026  (avg per dynamic cell: 0.096820)
+  Epoch  18/30  loss=89422.028290  (avg per dynamic cell: 0.090877)
+  Epoch  19/30  loss=80894.387714  (avg per dynamic cell: 0.082210)
+  Epoch  20/30  loss=72963.557287  (avg per dynamic cell: 0.074151)
+  Epoch  21/30  loss=64720.824623  (avg per dynamic cell: 0.065774)
+  Epoch  22/30  loss=59630.693768  (avg per dynamic cell: 0.060601)
+  Epoch  23/30  loss=59140.955391  (avg per dynamic cell: 0.060103)
+  Epoch  24/30  loss=56534.565842  (avg per dynamic cell: 0.057454)
+  Epoch  25/30  loss=55310.886871  (avg per dynamic cell: 0.056211)
+  Epoch  26/30  loss=53798.473547  (avg per dynamic cell: 0.054674)
+  Epoch  27/30  loss=51176.648817  (avg per dynamic cell: 0.052009)
+  Epoch  28/30  loss=49602.232870  (avg per dynamic cell: 0.050409)
+  Epoch  29/30  loss=48840.774206  (avg per dynamic cell: 0.049635)
+  Epoch  30/30  loss=48649.630405  (avg per dynamic cell: 0.049441)
+
+Predicting round 1, seed 2
+Grid [r1.s2]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1331
+  Weighted KL:   0.064345
+  Score:         82.45 / 100
+Written to data/pred_cnn_r1_s2.bin
+  [R1.S3] Ground truth entries: 115
+Base training samples: 110 loaded, 5 excluded (round 1)
+Applying 8x data augmentation (4 rotations x 2 flips)...
+Augmented training samples: 880
+U-Net Architecture (channels: 16/32/64):
+  Encoder:    Conv(13->16)->IN->ReLU->Conv(16->16)->IN->ReLU -> Pool
+              Conv(16->32)->IN->ReLU->Conv(32->32)->IN->ReLU -> Pool
+  Bottleneck: Conv(32->64)->IN->ReLU->Conv(64->32)->IN->ReLU
+  Decoder:    Up->Cat(64)->Conv(64->32)->IN->ReLU->Conv(32->16)->IN->ReLU
+              Up->Cat(32)->Conv(32->16)->IN->ReLU->Conv(16->6) + Residual
+  Total parameters: 84150
+  Threads: 12
+Epochs: 30, Adam LR: 0.0010, Augmented samples: 880
+  Epoch   1/30  loss=234914.000290  (avg per dynamic cell: 0.238736)
+  Epoch   2/30  loss=129361.971470  (avg per dynamic cell: 0.131466)
+  Epoch   3/30  loss=119003.109871  (avg per dynamic cell: 0.120939)
+  Epoch   4/30  loss=116126.784325  (avg per dynamic cell: 0.118016)
+  Epoch   5/30  loss=111450.914398  (avg per dynamic cell: 0.113264)
+  Epoch   6/30  loss=109999.565899  (avg per dynamic cell: 0.111789)
+  Epoch   7/30  loss=108409.014767  (avg per dynamic cell: 0.110173)
+  Epoch   8/30  loss=109932.790625  (avg per dynamic cell: 0.111721)
+  Epoch   9/30  loss=105983.785278  (avg per dynamic cell: 0.107708)
+  Epoch  10/30  loss=105531.276871  (avg per dynamic cell: 0.107248)
+  Epoch  11/30  loss=105233.720053  (avg per dynamic cell: 0.106946)
+  Epoch  12/30  loss=103195.218962  (avg per dynamic cell: 0.104874)
+  Epoch  13/30  loss=103005.773275  (avg per dynamic cell: 0.104682)
+  Epoch  14/30  loss=101769.568010  (avg per dynamic cell: 0.103425)
+  Epoch  15/30  loss=99255.024630  (avg per dynamic cell: 0.100870)
+  Epoch  16/30  loss=97194.134808  (avg per dynamic cell: 0.098775)
+  Epoch  17/30  loss=95270.539026  (avg per dynamic cell: 0.096820)
+  Epoch  18/30  loss=89422.028290  (avg per dynamic cell: 0.090877)
+  Epoch  19/30  loss=80894.387714  (avg per dynamic cell: 0.082210)
+  Epoch  20/30  loss=72963.557287  (avg per dynamic cell: 0.074151)
+  Epoch  21/30  loss=64720.824623  (avg per dynamic cell: 0.065774)
+  Epoch  22/30  loss=59630.693768  (avg per dynamic cell: 0.060601)
+  Epoch  23/30  loss=59140.955391  (avg per dynamic cell: 0.060103)
+  Epoch  24/30  loss=56534.565842  (avg per dynamic cell: 0.057454)
+  Epoch  25/30  loss=55310.886871  (avg per dynamic cell: 0.056211)
+  Epoch  26/30  loss=53798.473547  (avg per dynamic cell: 0.054674)
+  Epoch  27/30  loss=51176.648817  (avg per dynamic cell: 0.052009)
+  Epoch  28/30  loss=49602.232870  (avg per dynamic cell: 0.050409)
+  Epoch  29/30  loss=48840.774206  (avg per dynamic cell: 0.049635)
+  Epoch  30/30  loss=48649.630405  (avg per dynamic cell: 0.049441)
+
+Predicting round 1, seed 3
+Grid [r1.s3]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1366
+  Weighted KL:   0.049733
+  Score:         86.14 / 100
+Written to data/pred_cnn_r1_s3.bin
+  [R1.S4] Ground truth entries: 115
+Base training samples: 110 loaded, 5 excluded (round 1)
+Applying 8x data augmentation (4 rotations x 2 flips)...
+Augmented training samples: 880
+U-Net Architecture (channels: 16/32/64):
+  Encoder:    Conv(13->16)->IN->ReLU->Conv(16->16)->IN->ReLU -> Pool
+              Conv(16->32)->IN->ReLU->Conv(32->32)->IN->ReLU -> Pool
+  Bottleneck: Conv(32->64)->IN->ReLU->Conv(64->32)->IN->ReLU
+  Decoder:    Up->Cat(64)->Conv(64->32)->IN->ReLU->Conv(32->16)->IN->ReLU
+              Up->Cat(32)->Conv(32->16)->IN->ReLU->Conv(16->6) + Residual
+  Total parameters: 84150
+  Threads: 12
+Epochs: 30, Adam LR: 0.0010, Augmented samples: 880
+  Epoch   1/30  loss=234914.000290  (avg per dynamic cell: 0.238736)
+  Epoch   2/30  loss=129361.971470  (avg per dynamic cell: 0.131466)
+  Epoch   3/30  loss=119003.109871  (avg per dynamic cell: 0.120939)
+  Epoch   4/30  loss=116126.784325  (avg per dynamic cell: 0.118016)
+  Epoch   5/30  loss=111450.914398  (avg per dynamic cell: 0.113264)
+  Epoch   6/30  loss=109999.565899  (avg per dynamic cell: 0.111789)
+  Epoch   7/30  loss=108409.014767  (avg per dynamic cell: 0.110173)
+  Epoch   8/30  loss=109932.790625  (avg per dynamic cell: 0.111721)
+  Epoch   9/30  loss=105983.785278  (avg per dynamic cell: 0.107708)
+  Epoch  10/30  loss=105531.276871  (avg per dynamic cell: 0.107248)
+  Epoch  11/30  loss=105233.720053  (avg per dynamic cell: 0.106946)
+  Epoch  12/30  loss=103195.218962  (avg per dynamic cell: 0.104874)
+  Epoch  13/30  loss=103005.773275  (avg per dynamic cell: 0.104682)
+  Epoch  14/30  loss=101769.568010  (avg per dynamic cell: 0.103425)
+  Epoch  15/30  loss=99255.024630  (avg per dynamic cell: 0.100870)
+  Epoch  16/30  loss=97194.134808  (avg per dynamic cell: 0.098775)
+  Epoch  17/30  loss=95270.539026  (avg per dynamic cell: 0.096820)
+  Epoch  18/30  loss=89422.028290  (avg per dynamic cell: 0.090877)
+  Epoch  19/30  loss=80894.387714  (avg per dynamic cell: 0.082210)
+  Epoch  20/30  loss=72963.557287  (avg per dynamic cell: 0.074151)
+  Epoch  21/30  loss=64720.824623  (avg per dynamic cell: 0.065774)
+  Epoch  22/30  loss=59630.693768  (avg per dynamic cell: 0.060601)
+  Epoch  23/30  loss=59140.955391  (avg per dynamic cell: 0.060103)
+  Epoch  24/30  loss=56534.565842  (avg per dynamic cell: 0.057454)
+  Epoch  25/30  loss=55310.886871  (avg per dynamic cell: 0.056211)
+  Epoch  26/30  loss=53798.473547  (avg per dynamic cell: 0.054674)
+  Epoch  27/30  loss=51176.648817  (avg per dynamic cell: 0.052009)
+  Epoch  28/30  loss=49602.232870  (avg per dynamic cell: 0.050409)
+  Epoch  29/30  loss=48840.774206  (avg per dynamic cell: 0.049635)
+  Epoch  30/30  loss=48649.630405  (avg per dynamic cell: 0.049441)
+
+Predicting round 1, seed 4
+Grid [r1.s4]: 40x40
+
+Validation vs ground truth:
+  Dynamic cells: 1274
+  Weighted KL:   0.098374
+  Score:         74.44 / 100
+Written to data/pred_cnn_r1_s4.bin
+
+=== 5. Ensemble blend ===
+=== Ensemble Weight Optimizer ===
+  Ground truth: data/ground_truth.bin
+  Data dir:     data/
+  Grid steps:   10 (step size = 0.10)
+  Grids:        data/grids.bin (smart flooring enabled)
+  Predict:      round 1
+
+Loaded 115 ground truth entries
+Rounds: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+
+Terrain grids loaded: 115 / 115 entries
+Model availability:
+  bucket  : 115 / 115 entries
+  mlp     : 115 / 115 entries
+  sim     : 115 / 115 entries
+  cnn     : 115 / 115 entries
+
+Individual model scores:
+  Model     R1     R2     R3     R4     R5     R6     R7     R8     R9     R10    R11    R12    R13    R14    R15    R16    R17    R18    R19    R20    R21    R22    R23     Avg
+  bucket    80.12  71.12  39.28  86.36  78.47  50.20  53.61  67.24  83.85  56.85  56.49  43.97  89.25  53.28  81.45  83.88  66.71  40.80  52.89  74.32  85.56  74.31  53.92  66.26
+  mlp       74.38  62.21  46.15  74.65  76.44  54.76  56.34  76.74  80.71  55.51  65.61  42.08  88.27  49.74  79.25  81.49  62.73  51.28  52.06  81.03  82.34  72.31  45.49  65.72
+  sim       84.03  83.17  46.45  84.18  78.18  71.07  55.37  65.33  88.28  57.73  64.08  39.47  84.84  59.35  87.10  77.70  73.46  42.76  55.29  72.42  81.61  73.30  49.59  68.47
+  cnn       79.40  68.89  33.42  85.39  75.92  61.37  64.92  62.67  86.42  52.36  57.93  42.06  85.51  57.30  85.00  77.11  62.46  41.13  49.32  68.47  78.56  70.46  54.20  65.23
+
+Optimizing over 4 available models: bucket mlp sim cnn
+Simplex points: 286 (per class)
+
+Running leave-one-round-out cross-validation...
+
+  Fold (held-out)  Score
+  Round 1          83.76
+  Round 2          81.61
+  Round 3          45.02
+  Round 4          87.00
+  Round 5          80.29
+  Round 6          67.38
+  Round 7          56.37
+  Round 8          67.43
+  Round 9          89.53
+  Round 10         59.36
+  Round 11         61.99
+  Round 12         39.87
+  Round 13         88.38
+  Round 14         57.54
+  Round 15         87.35
+  Round 16         80.60
+  Round 17         70.88
+  Round 18         41.23
+  Round 19         55.88
+  Round 20         74.40
+  Round 21         84.15
+  Round 22         75.26
+  Round 23         50.23
+  ─────────────────────
+  CV Average       68.94
+
+Optimizing final weights on all data...
+
+Optimal per-class weights:
+  Class         bucket    mlp       sim       cnn     
+  ────────────  ────────  ────────  ────────  ────────
+  empty/pln       1.00      0.00      0.00      0.00  
+  settle          0.00      0.00      0.80      0.20  
+  port            0.00      0.00      1.00      0.00  
+  ruin            0.00      0.00      1.00      0.00  
+  forest          0.00      0.00      1.00      0.00  
+  mountain        0.00      0.00      0.00      1.00  
+
+Final blend scores (in-sample):
+  Entry     Blend     bucket    mlp       sim       cnn     
+  R14.S1    58.16    52.03    17.88    59.56    61.47  
+  R14.S0    57.55    53.54    55.31    58.73    58.07  
+  R14.S3    58.59    54.04    64.98    60.62    55.66  
+  R14.S2    58.62    55.37    57.70    60.32    55.44  
+  R14.S4    56.09    51.41    52.84    57.53    55.87  
+  R13.S1    87.56    88.91    87.66    83.84    89.00  
+  R13.S0    88.27    89.22    90.45    85.36    85.58  
+  R13.S3    89.57    90.36    90.20    86.53    89.09  
+  R13.S2    87.59    89.21    87.03    84.25    88.05  
+  R13.S4    88.16    88.56    86.02    84.22    75.86  
+  R22.S1    76.23    74.81    68.77    72.54    81.50  
+  R22.S0    76.20    74.43    67.08    74.84    71.20  
+  R22.S3    74.03    73.46    78.16    71.80    70.07  
+  R22.S2    75.18    74.47    71.66    73.84    67.23  
+  R22.S4    74.67    74.41    75.86    73.50    62.32  
+  R23.S1    50.88    55.46    58.80    50.12    54.01  
+  R23.S0    51.63    54.24    48.39    51.71    53.29  
+  R23.S3    53.11    56.27    57.13    51.65    62.15  
+  R23.S2    50.00    54.52    39.87    48.81    55.99  
+  R23.S4    45.55    49.11    23.27    45.65    45.56  
+  R12.S1    35.10    41.50    20.08    37.82    20.84  
+  R12.S0    43.12    45.84    58.27    41.83    52.53  
+  R12.S3    39.35    44.84    51.40    39.93    36.10  
+  R12.S2    40.45    44.21    49.09    39.27    45.06  
+  R12.S4    41.36    43.48    31.56    38.49    55.80  
+  R15.S1    86.30    79.86    66.03    86.71    84.61  
+  R15.S0    87.38    82.67    89.55    87.78    80.73  
+  R15.S3    88.25    79.37    86.83    87.80    88.94  
+  R15.S2    88.10    82.44    79.72    86.72    87.09  
+  R15.S4    86.73    82.93    74.11    86.48    83.65  
+  R7.S1     57.24    53.18    55.62    55.74    66.84  
+  R7.S0     54.76    50.05    58.76    54.06    63.19  
+  R7.S3     54.21    52.20    62.65    52.31    62.63  
+  R7.S2     57.20    55.47    53.38    56.35    62.67  
+  R7.S4     60.63    57.17    51.30    58.39    69.27  
+  R9.S1     89.88    83.71    87.24    88.45    88.62  
+  R9.S0     88.79    83.51    85.96    87.06    87.22  
+  R9.S3     90.38    84.89    81.05    88.96    88.84  
+  R9.S2     88.75    82.73    80.55    87.95    80.45  
+  R9.S4     89.87    84.40    68.74    88.96    86.99  
+  R8.S1     64.38    63.64    81.26    61.96    63.51  
+  R8.S0     70.43    68.56    67.12    66.62    75.89  
+  R8.S3     67.45    66.85    80.46    67.22    55.78  
+  R8.S2     68.71    69.94    71.77    66.51    59.52  
+  R8.S4     66.20    67.19    83.07    64.33    58.66  
+  R1.S1     84.56    82.02    85.27    83.70    84.87  
+  R1.S0     82.60    77.22    78.77    84.45    69.09  
+  R1.S3     85.86    84.52    81.47    85.04    86.14  
+  R1.S2     83.45    79.70    66.74    83.62    82.45  
+  R1.S4     82.10    77.13    59.63    83.32    74.44  
+  R6.S1     69.35    49.78    63.04    69.35    80.54  
+  R6.S0     65.35    48.01    33.06    69.56    55.55  
+  R6.S3     69.30    51.37    65.41    72.73    66.83  
+  R6.S2     68.13    53.00    58.12    71.54    58.91  
+  R6.S4     66.21    48.85    54.17    72.17    45.01  
+  R10.S1    60.64    57.09    40.08    56.97    64.81  
+  R10.S0    57.92    57.39    70.26    58.68    38.44  
+  R10.S3    57.62    56.36    50.77    54.59    53.10  
+  R10.S2    63.41    56.73    69.07    59.71    72.94  
+  R10.S4    57.21    56.70    47.35    58.70    32.50  
+  R17.S1    72.27    68.98    65.55    74.76    63.11  
+  R17.S0    71.32    66.08    65.78    72.53    70.45  
+  R17.S3    68.03    66.35    62.36    70.94    56.00  
+  R17.S2    72.80    64.92    67.08    74.07    71.84  
+  R17.S4    71.27    67.22    52.90    75.00    50.88  
+  R21.S1    85.31    86.79    71.18    82.87    80.87  
+  R21.S0    84.69    85.46    84.45    81.95    82.34  
+  R21.S3    83.63    85.93    85.72    80.89    74.59  
+  R21.S2    85.55    85.95    82.53    83.00    84.41  
+  R21.S4    81.58    83.64    87.81    79.37    70.59  
+  R19.S1    55.71    51.56    53.52    54.05    56.52  
+  R19.S0    56.63    53.33    66.44    55.64    51.82  
+  R19.S3    57.04    53.37    41.11    56.51    52.20  
+  R19.S2    53.92    52.69    40.24    53.97    40.57  
+  R19.S4    56.10    53.51    59.00    56.26    45.49  
+  R18.S1    37.82    40.33    35.83    42.62    19.82  
+  R18.S0    40.77    38.32    44.09    38.97    59.61  
+  R18.S3    51.98    50.15    77.83    54.55    47.54  
+  R18.S2    43.08    40.20    51.31    40.80    62.17  
+  R18.S4    32.39    34.98    47.34    36.87    16.49  
+  R20.S1    75.91    75.33    83.72    74.46    67.95  
+  R20.S0    73.81    73.73    73.94    71.92    67.56  
+  R20.S3    78.30    75.89    77.25    74.36    86.97  
+  R20.S2    72.71    74.55    81.58    71.58    57.94  
+  R20.S4    71.27    72.09    88.65    69.78    61.94  
+  R16.S1    80.96    83.93    82.26    78.23    77.87  
+  R16.S0    79.49    82.71    83.76    76.53    78.77  
+  R16.S3    79.65    82.73    79.03    76.66    79.92  
+  R16.S2    80.93    84.05    78.62    78.17    81.17  
+  R16.S4    81.99    85.96    83.77    78.90    67.83  
+  R11.S1    65.56    61.15    78.37    66.72    63.81  
+  R11.S0    65.13    60.77    80.10    68.92    49.84  
+  R11.S3    65.65    58.32    64.55    67.63    65.28  
+  R11.S2    50.73    46.52    39.42    54.05    43.96  
+  R11.S4    62.47    55.68    65.61    63.09    66.75  
+  R3.S1     47.03    41.62    45.37    47.77    34.94  
+  R3.S0     43.39    35.66    55.78    47.75    28.16  
+  R3.S3     42.82    41.15    42.74    44.35    20.66  
+  R3.S2     48.40    40.30    41.26    46.49    54.54  
+  R3.S4     43.47    37.66    45.59    45.89    28.81  
+  R4.S1     87.78    87.01    82.70    85.82    79.43  
+  R4.S0     84.96    85.70    77.47    81.37    85.75  
+  R4.S3     87.17    86.08    62.81    83.86    90.00  
+  R4.S2     88.41    86.31    69.89    86.15    88.37  
+  R4.S4     86.69    86.70    80.38    83.72    83.41  
+  R5.S1     76.51    75.42    63.19    76.62    53.12  
+  R5.S0     79.87    77.17    74.76    77.01    82.70  
+  R5.S3     81.44    79.68    82.72    79.04    83.66  
+  R5.S2     81.70    79.60    80.64    78.94    83.79  
+  R5.S4     81.90    80.47    80.90    79.27    76.34  
+  R2.S1     84.37    74.66    74.73    84.57    79.40  
+  R2.S0     82.94    66.11    20.32    82.66    85.41  
+  R2.S3     81.08    72.28    56.38    82.33    64.34  
+  R2.S2     80.76    72.03    76.98    83.32    52.35  
+  R2.S4     80.70    70.54    82.63    82.95    62.94  
+  ────────────────────────────────────────────────────────
+  Average   68.99    66.26    65.72    68.47    65.23  
+
+Improvement over best single model (sim): 68.47 -> 68.99 (+0.53)
+CV estimate: 68.94
+
+Generating blended predictions for round 1...
+  R1.S0: score=82.60 (wKL=0.063726) -> data/pred_blend_r1_s0.bin
+  R1.S1: score=84.56 (wKL=0.055892) -> data/pred_blend_r1_s1.bin
+  R1.S2: score=83.45 (wKL=0.060323) -> data/pred_blend_r1_s2.bin
+  R1.S3: score=85.86 (wKL=0.050827) -> data/pred_blend_r1_s3.bin
+  R1.S4: score=82.10 (wKL=0.065746) -> data/pred_blend_r1_s4.bin
+
+Done.
+
+=== 6. Queries + Bayesian blending ===
+
+  Round 1 — active
+  Queries: 0/50
+  Model: blend, Viewport: 10x10
+  Seeds: 0, 1, 2, 3, 4
+  *** SMART ALLOC — proportional query allocation ***
+
+  Smart alloc: S0=8, S1=11, S2=10, S3=12, S4=9 (total=50)
+━━━ Seed 0 ━━━
+  Loaded bucket: ../simulation/data/pred_bucket_r1_s0.bin
+  Loaded MLP: ../simulation/data/pred_mlp_r1_s0.bin
+  Loaded sim: ../simulation/data/pred_sim_r1_s0.bin
+  Loaded CNN: ../simulation/data/pred_cnn_r1_s0.bin
+  Loaded blend: ../simulation/data/pred_blend_r1_s0.bin
+  Using blend (per-class optimized ensemble)
+  Stored queries: 0
+  Viewport targeting: entropy + disagreement (5 models)
+  Budget: 0/50 used, will use 8
+  Query 1/8: viewport (3, 0) 10x10
+    ✓ queries: 1/50
+  Query 2/8: viewport (17, 0) 10x10
+    ✓ queries: 2/50
+  Query 3/8: viewport (6, 29) 10x10
+    ✓ queries: 3/50
+  Query 4/8: viewport (15, 7) 10x10
+    ✓ queries: 4/50
+  Query 5/8: viewport (26, 27) 10x10
+    ✓ queries: 5/50
+  Query 6/8: viewport (26, 19) 10x10
+    ✓ queries: 6/50
+  Query 7/8: viewport (17, 14) 10x10
+    ✓ queries: 7/50
+  Query 8/8: viewport (10, 2) 10x10
+    ✓ queries: 8/50
+  Saved 8 total queries
+  Blended: 663 cells refined, avg 1.2 samples/cell
+  Written: ../simulation/data/pred_blend_r1_s0.bin
+  Submit-ready: ../simulation/data/pred_r1_s0.bin
+
+━━━ Seed 1 ━━━
+  Loaded bucket: ../simulation/data/pred_bucket_r1_s1.bin
+  Loaded MLP: ../simulation/data/pred_mlp_r1_s1.bin
+  Loaded sim: ../simulation/data/pred_sim_r1_s1.bin
+  Loaded CNN: ../simulation/data/pred_cnn_r1_s1.bin
+  Loaded blend: ../simulation/data/pred_blend_r1_s1.bin
+  Using blend (per-class optimized ensemble)
+  Stored queries: 0
+  Viewport targeting: entropy + disagreement (5 models)
+  Budget: 8/50 used, will use 11
+  Query 1/11: viewport (5, 0) 10x10
+    ✓ queries: 9/50
+  Query 2/11: viewport (1, 16) 10x10
+    ✓ queries: 10/50
+  Query 3/11: viewport (29, 22) 10x10
+    ✓ queries: 11/50
+  Query 4/11: viewport (13, 0) 10x10
+    ✓ queries: 12/50
+  Query 5/11: viewport (12, 29) 10x10
+    ✓ queries: 13/50
+  Query 6/11: viewport (23, 17) 10x10
+    ✓ queries: 14/50
+  Query 7/11: viewport (21, 27) 10x10
+    ✓ queries: 15/50
+  Query 8/11: viewport (8, 14) 10x10
+    ✓ queries: 16/50
+  Query 9/11: viewport (9, 6) 10x10
+    ✓ queries: 17/50
+  Query 10/11: viewport (16, 11) 10x10
+    ✓ queries: 18/50
+  Query 11/11: viewport (23, 9) 10x10
+    ✓ queries: 19/50
+  Saved 11 total queries
+  Blended: 885 cells refined, avg 1.2 samples/cell
+  Written: ../simulation/data/pred_blend_r1_s1.bin
+  Submit-ready: ../simulation/data/pred_r1_s1.bin
+
+━━━ Seed 2 ━━━
+  Loaded bucket: ../simulation/data/pred_bucket_r1_s2.bin
+  Loaded MLP: ../simulation/data/pred_mlp_r1_s2.bin
+  Loaded sim: ../simulation/data/pred_sim_r1_s2.bin
+  Loaded CNN: ../simulation/data/pred_cnn_r1_s2.bin
+  Loaded blend: ../simulation/data/pred_blend_r1_s2.bin
+  Using blend (per-class optimized ensemble)
+  Stored queries: 0
+  Viewport targeting: entropy + disagreement (5 models)
+  Budget: 19/50 used, will use 10
+  Query 1/10: viewport (18, 24) 10x10
+    ✓ queries: 20/50
+  Query 2/10: viewport (5, 29) 10x10
+    ✓ queries: 21/50
+  Query 3/10: viewport (21, 0) 10x10
+    ✓ queries: 22/50
+  Query 4/10: viewport (23, 18) 10x10
+    ✓ queries: 23/50
+  Query 5/10: viewport (13, 0) 10x10
+    ✓ queries: 24/50
+  Query 6/10: viewport (21, 11) 10x10
+    ✓ queries: 25/50
+  Query 7/10: viewport (13, 29) 10x10
+    ✓ queries: 26/50
+  Query 8/10: viewport (29, 8) 10x10
+    ✓ queries: 27/50
+  Query 9/10: viewport (29, 0) 10x10
+    ✓ queries: 28/50
+  Query 10/10: viewport (9, 23) 10x10
+    ✓ queries: 29/50
+  Saved 10 total queries
+  Blended: 792 cells refined, avg 1.3 samples/cell
+  Written: ../simulation/data/pred_blend_r1_s2.bin
+  Submit-ready: ../simulation/data/pred_r1_s2.bin
+
+━━━ Seed 3 ━━━
+  Loaded bucket: ../simulation/data/pred_bucket_r1_s3.bin
+  Loaded MLP: ../simulation/data/pred_mlp_r1_s3.bin
+  Loaded sim: ../simulation/data/pred_sim_r1_s3.bin
+  Loaded CNN: ../simulation/data/pred_cnn_r1_s3.bin
+  Loaded blend: ../simulation/data/pred_blend_r1_s3.bin
+  Using blend (per-class optimized ensemble)
+  Stored queries: 0
+  Viewport targeting: entropy + disagreement (5 models)
+  Budget: 29/50 used, will use 12
+  Query 1/12: viewport (8, 28) 10x10
+    ✓ queries: 30/50
+  Query 2/12: viewport (18, 18) 10x10
+    ✓ queries: 31/50
+  Query 3/12: viewport (12, 22) 10x10
+    ✓ queries: 32/50
+  Query 4/12: viewport (20, 11) 10x10
+    ✓ queries: 33/50
+  Query 5/12: viewport (2, 20) 10x10
+    ✓ queries: 34/50
+  Query 6/12: viewport (15, 6) 10x10
+    ✓ queries: 35/50
+  Query 7/12: viewport (1, 12) 10x10
+    ✓ queries: 36/50
+  Query 8/12: viewport (29, 0) 10x10
+    ✓ queries: 37/50
+  Query 9/12: viewport (22, 4) 10x10
+    ✓ queries: 38/50
+  Query 10/12: viewport (29, 9) 10x10
+    ✓ queries: 39/50
+  Query 11/12: viewport (29, 20) 10x10
+    ✓ queries: 40/50
+  Query 12/12: viewport (8, 16) 10x10
+    ✓ queries: 41/50
+  Saved 12 total queries
+  Blended: 932 cells refined, avg 1.3 samples/cell
+  Written: ../simulation/data/pred_blend_r1_s3.bin
+  Submit-ready: ../simulation/data/pred_r1_s3.bin
+
+━━━ Seed 4 ━━━
+  Loaded bucket: ../simulation/data/pred_bucket_r1_s4.bin
+  Loaded MLP: ../simulation/data/pred_mlp_r1_s4.bin
+  Loaded sim: ../simulation/data/pred_sim_r1_s4.bin
+  Loaded CNN: ../simulation/data/pred_cnn_r1_s4.bin
+  Loaded blend: ../simulation/data/pred_blend_r1_s4.bin
+  Using blend (per-class optimized ensemble)
+  Stored queries: 0
+  Viewport targeting: entropy + disagreement (5 models)
+  Budget: 41/50 used, will use 9
+  Query 1/9: viewport (26, 15) 10x10
+    ✓ queries: 42/50
+  Query 2/9: viewport (21, 21) 10x10
+    ✓ queries: 43/50
+  Query 3/9: viewport (19, 13) 10x10
+    ✓ queries: 44/50
+  Query 4/9: viewport (18, 29) 10x10
+    ✓ queries: 45/50
+  Query 5/9: viewport (1, 29) 10x10
+    ✓ queries: 46/50
+  Query 6/9: viewport (21, 0) 10x10
+    ✓ queries: 47/50
+  Query 7/9: viewport (17, 6) 10x10
+    ✓ queries: 48/50
+  Query 8/9: viewport (29, 22) 10x10
+    ✓ queries: 49/50
+  Query 9/9: viewport (3, 22) 10x10
+    ✓ queries: 50/50
+  Saved 9 total queries
+  Blended: 727 cells refined, avg 1.2 samples/cell
+  Written: ../simulation/data/pred_blend_r1_s4.bin
+  Submit-ready: ../simulation/data/pred_r1_s4.bin
+
+
+━━━ Pooled Temperature Scaling ━━━
+  Settlement stats: 1376 alive, 54 ports, 51 factions
+    avg pop=1.18 food=0.62 def=0.43 wealth=0.021
+  Temps: E=0.75 S=0.75 P=0.9 R=0.9 F=0.75 (from 3775 observation pairs)
+  S0: applied temperatures
+  S1: applied temperatures
+  S2: applied temperatures
+  S3: applied temperatures
+  S4: applied temperatures
+
+━━━ Summary ━━━
+  S0: 8 queries, 663 cells refined
+  S1: 11 queries, 885 cells refined
+  S2: 10 queries, 792 cells refined
+  S3: 12 queries, 932 cells refined
+  S4: 9 queries, 727 cells refined
+
+Prediction files ready at ../simulation/data/pred_r1_s*.bin
+Submit with: deno run -A submit-predictions.ts --round 1
+
+=== 7. Submitting ===
+Submitting [r1.s0] 40x40 -> 78874e0c-9e13-40c1-b25a-beb495ec4414
+  Failed: Error: POST /astar-island/submit failed (403): {"detail":"Competition has ended. No new submissions accepted."}
+Submitting [r1.s1] 40x40 -> 78874e0c-9e13-40c1-b25a-beb495ec4414
+  Failed: Error: POST /astar-island/submit failed (403): {"detail":"Competition has ended. No new submissions accepted."}
+Submitting [r1.s2] 40x40 -> 78874e0c-9e13-40c1-b25a-beb495ec4414
+  Failed: Error: POST /astar-island/submit failed (403): {"detail":"Competition has ended. No new submissions accepted."}
+Submitting [r1.s3] 40x40 -> 78874e0c-9e13-40c1-b25a-beb495ec4414
+  Failed: Error: POST /astar-island/submit failed (403): {"detail":"Competition has ended. No new submissions accepted."}
+Submitting [r1.s4] 40x40 -> 78874e0c-9e13-40c1-b25a-beb495ec4414
+  Failed: Error: POST /astar-island/submit failed (403): {"detail":"Competition has ended. No new submissions accepted."}
+
+=== 8. Updating dashboard ===
+Found rounds: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+  Round 1: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 2: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 3: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 4: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 5: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 6: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 7: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 8: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 9: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 10: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 11: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:false gt:true]
+  Round 12: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:false gt:true]
+  Round 13: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:false gt:true]
+  Round 14: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 15: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 16: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 17: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 18: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 19: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 20: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 21: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 22: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+  Round 23: 5 seeds [bkt:true mlp:true sim:true cnn:true blend:true gt:true]
+
+Seed  R1     R2     R3     R4     R5     R6     R7     R8     R9     R10     R11     R12     R13     R14     R15     R16     R17     R18     R19     R20     R21     R22     R23    AVG
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+S0    77/79/84/69/79  66/20/83/85/73  36/56/48/28/40  86/77/81/86/85  77/75/77/83/80  48/33/70/56/59  50/59/54/63/55  69/67/67/76/71  84/86/87/87/85  57/70/59/38/70  61/80/69/50/-  46/58/42/53/-  89/90/85/86/-  54/55/59/58/57  83/90/88/81/88  83/84/77/79/80  66/66/73/70/71  38/44/39/60/43  53/66/56/52/58  74/74/72/68/75  85/84/82/82/82  74/67/75/71/76  54/48/52/53/53  66/67/69/67/69
+S1    82/85/84/85/78  75/75/85/79/80  42/45/48/35/44  87/83/86/79/86  75/63/77/53/79  50/63/69/81/61  53/56/56/67/57  64/81/62/64/71  84/87/88/89/86  57/40/57/65/67  61/78/67/64/-  41/20/38/21/-  89/88/84/89/-  52/18/60/61/57  80/66/87/85/84  84/82/78/78/80  69/66/75/63/74  40/36/43/20/48  52/54/54/57/63  75/84/74/68/77  87/71/83/81/83  75/69/73/81/74  55/59/50/54/53  66/64/68/66/70
+S2    80/67/84/82/77  72/77/83/52/78  40/41/46/55/42  86/70/86/88/86  80/81/79/84/82  53/58/72/59/64  55/53/56/63/59  70/72/67/60/71  83/81/88/80/85  57/69/60/73/68  47/39/54/44/-  44/49/39/45/-  89/87/84/88/-  55/58/60/55/58  82/80/87/87/86  84/79/78/81/82  65/67/74/72/74  40/51/41/62/46  53/40/54/41/56  75/82/72/58/75  86/83/83/84/83  74/72/74/67/76  55/40/49/56/52  66/65/68/67/70
+S3    85/81/85/86/79  72/56/82/64/78  41/43/44/21/43  86/63/84/90/85  80/83/79/84/82  51/65/73/67/63  52/63/52/63/56  67/80/67/56/73  85/81/89/89/85  56/51/55/53/65  58/65/68/65/-  45/51/40/36/-  90/90/87/89/-  54/65/61/56/59  79/87/88/89/87  83/79/77/80/80  66/62/71/56/71  50/78/55/48/60  53/41/57/52/58  76/77/74/87/77  86/86/81/75/82  73/78/72/70/73  56/57/52/62/54  67/69/69/67/71
+S4    77/60/83/74/78  71/83/83/63/77  38/46/46/29/38  87/80/84/83/86  80/81/79/76/82  49/54/72/45/60  57/51/58/69/61  67/83/64/59/72  84/69/89/87/85  57/47/59/32/67  56/66/63/67/-  43/32/38/56/-  89/86/84/76/-  51/53/58/56/55  83/74/86/84/83  86/84/79/68/82  67/53/75/51/74  35/47/37/16/42  54/59/56/45/59  72/89/70/62/70  84/88/79/71/80  74/76/74/62/76  49/23/46/46/50  66/64/68/60/69
+AVG   80/74/84/79/78  71/62/83/69/77  39/46/46/33/41  86/75/84/85/86  78/76/78/76/81  50/55/71/61/62  54/56/55/65/58  67/77/65/63/72  84/81/88/86/85  57/56/58/52/67  56/66/64/58/-  44/42/39/42/-  89/88/85/86/-  53/50/59/57/57  81/79/87/85/86  84/81/78/77/81  67/63/73/62/73  41/51/43/41/48  53/52/55/49/59  74/81/72/68/75  86/82/82/79/82  74/72/73/70/75  54/45/50/54/52  66/66/68/65/70
+
+Models: bucket/mlp/sim/cnn/blend
+
+Open: file:///Users/entropy/Documents/repos/personal/nmai/astar-island/aggregate-data/data/preview.html
+
+==========================================
+  Round 1 complete!
+==========================================
+  Dashboard: open aggregate-data/data/preview.html
+[2026-03-23 08:15:50]   >>> Round 1 submitted successfully!
+[2026-03-23 08:15:50]   Fetching ground truth for completed round 23
+Fetching my-rounds...
+
+Round  Status      Score   Rank     Seeds  Queries
+─────  ──────────  ──────  ───────  ─────  ───────
+  1    active           -        -  0/5  50/50
+  23   completed     51.1  189/285  5/5  50/50
+  22   completed     73.3  163/278  5/5  50/50
+  21   completed     82.3  136/225  5/5  50/50
+  20   completed     60.7  153/181  4/5  50/50
+  19   completed     58.9  161/228  5/5  50/50
+  18   completed     47.7  179/265  5/5  50/50
+  17   completed     72.8  156/283  5/5  50/50
+  16   completed     80.6  100/272  5/5  50/50
+  15   completed     85.5  102/262  5/5  50/50
+  14   completed     57.3  141/244  5/5  50/50
+  13   completed        -        -  0/5  0/50
+  12   completed        -        -  0/5  0/50
+  11   completed        -        -  0/5  0/50
+  10   completed     68.7  103/238  5/5  50/50
+  9    completed     90.9   21/221  5/5  50/50
+  8    completed     71.6   87/214  5/5  50/50
+  7    completed     59.8   88/199  5/5  50/50
+  6    completed        -        -  0/5  0/50
+  5    completed        -        -  0/5  1/50
+
+Saved to data/my-rounds.json
+
+  [r1] initial states already exist, skipping
+  [r23] initial states already exist, skipping
+  [r22] initial states already exist, skipping
+  [r21] initial states already exist, skipping
+  [r20] initial states already exist, skipping
+  [r19] initial states already exist, skipping
+  [r18] initial states already exist, skipping
+  [r17] initial states already exist, skipping
+  [r16] initial states already exist, skipping
+  [r15] initial states already exist, skipping
+  [r14] initial states already exist, skipping
+  [r13] initial states already exist, skipping
+  [r12] initial states already exist, skipping
+  [r11] initial states already exist, skipping
+  [r10] initial states already exist, skipping
+  [r9] initial states already exist, skipping
+  [r8] initial states already exist, skipping
+  [r7] initial states already exist, skipping
+  [r6] initial states already exist, skipping
+  [r5] initial states already exist, skipping
+
+Fetching analysis for 19 completed round(s)...
+
+  [r23.s0] already exists, skipping
+  [r23.s1] already exists, skipping
+  [r23.s2] already exists, skipping
+  [r23.s3] already exists, skipping
+  [r23.s4] already exists, skipping
+  [r22.s0] already exists, skipping
+  [r22.s1] already exists, skipping
+  [r22.s2] already exists, skipping
+  [r22.s3] already exists, skipping
+  [r22.s4] already exists, skipping
+  [r21.s0] already exists, skipping
+  [r21.s1] already exists, skipping
+  [r21.s2] already exists, skipping
+  [r21.s3] already exists, skipping
+  [r21.s4] already exists, skipping
+  [r20.s0] already exists, skipping
+  [r20.s1] already exists, skipping
+  [r20.s2] already exists, skipping
+  [r20.s3] already exists, skipping
+  [r20.s4] already exists, skipping
+  [r19.s0] already exists, skipping
+  [r19.s1] already exists, skipping
+  [r19.s2] already exists, skipping
+  [r19.s3] already exists, skipping
+  [r19.s4] already exists, skipping
+  [r18.s0] already exists, skipping
+  [r18.s1] already exists, skipping
+  [r18.s2] already exists, skipping
+  [r18.s3] already exists, skipping
+  [r18.s4] already exists, skipping
+  [r17.s0] already exists, skipping
+  [r17.s1] already exists, skipping
+  [r17.s2] already exists, skipping
+  [r17.s3] already exists, skipping
+  [r17.s4] already exists, skipping
+  [r16.s0] already exists, skipping
+  [r16.s1] already exists, skipping
+  [r16.s2] already exists, skipping
+  [r16.s3] already exists, skipping
+  [r16.s4] already exists, skipping
+  [r15.s0] already exists, skipping
+  [r15.s1] already exists, skipping
+  [r15.s2] already exists, skipping
+  [r15.s3] already exists, skipping
+  [r15.s4] already exists, skipping
+  [r14.s0] already exists, skipping
+  [r14.s1] already exists, skipping
+  [r14.s2] already exists, skipping
+  [r14.s3] already exists, skipping
+  [r14.s4] already exists, skipping
+  [r13.s0] already exists, skipping
+  [r13.s1] already exists, skipping
+  [r13.s2] already exists, skipping
+  [r13.s3] already exists, skipping
+  [r13.s4] already exists, skipping
+  [r12.s0] already exists, skipping
+  [r12.s1] already exists, skipping
+  [r12.s2] already exists, skipping
+  [r12.s3] already exists, skipping
+  [r12.s4] already exists, skipping
+  [r11.s0] already exists, skipping
+  [r11.s1] already exists, skipping
+  [r11.s2] already exists, skipping
+  [r11.s3] already exists, skipping
+  [r11.s4] already exists, skipping
+  [r10.s0] already exists, skipping
+  [r10.s1] already exists, skipping
+  [r10.s2] already exists, skipping
+  [r10.s3] already exists, skipping
+  [r10.s4] already exists, skipping
+  [r9.s0] already exists, skipping
+  [r9.s1] already exists, skipping
+  [r9.s2] already exists, skipping
+  [r9.s3] already exists, skipping
+  [r9.s4] already exists, skipping
+  [r8.s0] already exists, skipping
+  [r8.s1] already exists, skipping
+  [r8.s2] already exists, skipping
+  [r8.s3] already exists, skipping
+  [r8.s4] already exists, skipping
+  [r7.s0] already exists, skipping
+  [r7.s1] already exists, skipping
+  [r7.s2] already exists, skipping
+  [r7.s3] already exists, skipping
+  [r7.s4] already exists, skipping
+  [r6.s0] already exists, skipping
+  [r6.s1] already exists, skipping
+  [r6.s2] already exists, skipping
+  [r6.s3] already exists, skipping
+  [r6.s4] already exists, skipping
+  [r5.s0] already exists, skipping
+  [r5.s1] already exists, skipping
+  [r5.s2] already exists, skipping
+  [r5.s3] already exists, skipping
+  [r5.s4] already exists, skipping
+
+Done. Training data structure:
+  data/initial/r{N}.json    — initial states (input)
+  data/analysis/r{N}/s{M}.json — ground truth (target)
+Converting JSON -> bin...
+
+  [r14.s1] 40x40 = 1600 cells (1344 dynamic)
+  [r14.s0] 40x40 = 1600 cells (1375 dynamic)
+  [r14.s3] 40x40 = 1600 cells (1363 dynamic)
+  [r14.s2] 40x40 = 1600 cells (1296 dynamic)
+  [r14.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r13.s1] 40x40 = 1600 cells (1347 dynamic)
+  [r13.s0] 40x40 = 1600 cells (1402 dynamic)
+  [r13.s3] 40x40 = 1600 cells (1343 dynamic)
+  [r13.s2] 40x40 = 1600 cells (1349 dynamic)
+  [r13.s4] 40x40 = 1600 cells (1372 dynamic)
+  [r22.s1] 40x40 = 1600 cells (657 dynamic)
+  [r22.s0] 40x40 = 1600 cells (630 dynamic)
+  [r22.s3] 40x40 = 1600 cells (791 dynamic)
+  [r22.s2] 40x40 = 1600 cells (676 dynamic)
+  [r22.s4] 40x40 = 1600 cells (756 dynamic)
+  [r23.s1] 40x40 = 1600 cells (897 dynamic)
+  [r23.s0] 40x40 = 1600 cells (912 dynamic)
+  [r23.s3] 40x40 = 1600 cells (980 dynamic)
+  [r23.s2] 40x40 = 1600 cells (929 dynamic)
+  [r23.s4] 40x40 = 1600 cells (809 dynamic)
+  [r12.s1] 40x40 = 1600 cells (747 dynamic)
+  [r12.s0] 40x40 = 1600 cells (848 dynamic)
+  [r12.s3] 40x40 = 1600 cells (915 dynamic)
+  [r12.s2] 40x40 = 1600 cells (877 dynamic)
+  [r12.s4] 40x40 = 1600 cells (833 dynamic)
+  [r15.s1] 40x40 = 1600 cells (1381 dynamic)
+  [r15.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r15.s3] 40x40 = 1600 cells (1405 dynamic)
+  [r15.s2] 40x40 = 1600 cells (1390 dynamic)
+  [r15.s4] 40x40 = 1600 cells (1398 dynamic)
+  [r7.s1] 40x40 = 1600 cells (1036 dynamic)
+  [r7.s0] 40x40 = 1600 cells (946 dynamic)
+  [r7.s3] 40x40 = 1600 cells (977 dynamic)
+  [r7.s2] 40x40 = 1600 cells (1014 dynamic)
+  [r7.s4] 40x40 = 1600 cells (1032 dynamic)
+  [r9.s1] 40x40 = 1600 cells (1375 dynamic)
+  [r9.s0] 40x40 = 1600 cells (1324 dynamic)
+  [r9.s3] 40x40 = 1600 cells (1390 dynamic)
+  [r9.s2] 40x40 = 1600 cells (1407 dynamic)
+  [r9.s4] 40x40 = 1600 cells (1380 dynamic)
+  [r8.s1] 40x40 = 1600 cells (1228 dynamic)
+  [r8.s0] 40x40 = 1600 cells (1329 dynamic)
+  [r8.s3] 40x40 = 1600 cells (1206 dynamic)
+  [r8.s2] 40x40 = 1600 cells (1305 dynamic)
+  [r8.s4] 40x40 = 1600 cells (1168 dynamic)
+  [r1.s1] 40x40 = 1600 cells (1365 dynamic)
+  [r1.s0] 40x40 = 1600 cells (1312 dynamic)
+  [r1.s3] 40x40 = 1600 cells (1394 dynamic)
+  [r1.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r1.s4] 40x40 = 1600 cells (1286 dynamic)
+  [r6.s1] 40x40 = 1600 cells (1394 dynamic)
+  [r6.s0] 40x40 = 1600 cells (1412 dynamic)
+  [r6.s3] 40x40 = 1600 cells (1425 dynamic)
+  [r6.s2] 40x40 = 1600 cells (1350 dynamic)
+  [r6.s4] 40x40 = 1600 cells (1418 dynamic)
+  [r10.s1] 40x40 = 1600 cells (713 dynamic)
+  [r10.s0] 40x40 = 1600 cells (651 dynamic)
+  [r10.s3] 40x40 = 1600 cells (747 dynamic)
+  [r10.s2] 40x40 = 1600 cells (626 dynamic)
+  [r10.s4] 40x40 = 1600 cells (673 dynamic)
+  [r17.s1] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s0] 40x40 = 1600 cells (1395 dynamic)
+  [r17.s3] 40x40 = 1600 cells (1377 dynamic)
+  [r17.s2] 40x40 = 1600 cells (1378 dynamic)
+  [r17.s4] 40x40 = 1600 cells (1385 dynamic)
+  [r21.s1] 40x40 = 1600 cells (1213 dynamic)
+  [r21.s0] 40x40 = 1600 cells (1113 dynamic)
+  [r21.s3] 40x40 = 1600 cells (1259 dynamic)
+  [r21.s2] 40x40 = 1600 cells (1093 dynamic)
+  [r21.s4] 40x40 = 1600 cells (1287 dynamic)
+  [r19.s1] 40x40 = 1600 cells (1069 dynamic)
+  [r19.s0] 40x40 = 1600 cells (1176 dynamic)
+  [r19.s3] 40x40 = 1600 cells (1072 dynamic)
+  [r19.s2] 40x40 = 1600 cells (1067 dynamic)
+  [r19.s4] 40x40 = 1600 cells (947 dynamic)
+  [r18.s1] 40x40 = 1600 cells (1353 dynamic)
+  [r18.s0] 40x40 = 1600 cells (1379 dynamic)
+  [r18.s3] 40x40 = 1600 cells (1240 dynamic)
+  [r18.s2] 40x40 = 1600 cells (1364 dynamic)
+  [r18.s4] 40x40 = 1600 cells (1395 dynamic)
+  [r20.s1] 40x40 = 1600 cells (1060 dynamic)
+  [r20.s0] 40x40 = 1600 cells (992 dynamic)
+  [r20.s3] 40x40 = 1600 cells (1068 dynamic)
+  [r20.s2] 40x40 = 1600 cells (1084 dynamic)
+  [r20.s4] 40x40 = 1600 cells (1183 dynamic)
+  [r16.s1] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s0] 40x40 = 1600 cells (1131 dynamic)
+  [r16.s3] 40x40 = 1600 cells (917 dynamic)
+  [r16.s2] 40x40 = 1600 cells (1127 dynamic)
+  [r16.s4] 40x40 = 1600 cells (1052 dynamic)
+  [r11.s1] 40x40 = 1600 cells (1317 dynamic)
+  [r11.s0] 40x40 = 1600 cells (1361 dynamic)
+  [r11.s3] 40x40 = 1600 cells (1357 dynamic)
+  [r11.s2] 40x40 = 1600 cells (1373 dynamic)
+  [r11.s4] 40x40 = 1600 cells (1320 dynamic)
+  [r3.s1] 40x40 = 1600 cells (586 dynamic)
+  [r3.s0] 40x40 = 1600 cells (551 dynamic)
+  [r3.s3] 40x40 = 1600 cells (553 dynamic)
+  [r3.s2] 40x40 = 1600 cells (548 dynamic)
+  [r3.s4] 40x40 = 1600 cells (536 dynamic)
+  [r4.s1] 40x40 = 1600 cells (1379 dynamic)
+  [r4.s0] 40x40 = 1600 cells (1351 dynamic)
+  [r4.s3] 40x40 = 1600 cells (1328 dynamic)
+  [r4.s2] 40x40 = 1600 cells (1317 dynamic)
+  [r4.s4] 40x40 = 1600 cells (1388 dynamic)
+  [r5.s1] 40x40 = 1600 cells (1188 dynamic)
+  [r5.s0] 40x40 = 1600 cells (1260 dynamic)
+  [r5.s3] 40x40 = 1600 cells (1230 dynamic)
+  [r5.s2] 40x40 = 1600 cells (1280 dynamic)
+  [r5.s4] 40x40 = 1600 cells (1274 dynamic)
+  [r2.s1] 40x40 = 1600 cells (1390 dynamic)
+  [r2.s0] 40x40 = 1600 cells (1415 dynamic)
+  [r2.s3] 40x40 = 1600 cells (1354 dynamic)
+  [r2.s2] 40x40 = 1600 cells (1353 dynamic)
+  [r2.s4] 40x40 = 1600 cells (1397 dynamic)
+
+Training: 184000 samples (133065 dynamic) -> ../simulation/data/training.bin
+
+Grids: 230 entries -> ../simulation/data/grids.bin
+Ground truth: 115 entries -> ../simulation/data/ground_truth.bin
+
+Done. Files in simulation/data/:
+  training.bin     — features + ground truth (for model)
+  grids.bin        — initial state grids (for prediction input)
+  ground_truth.bin — raw ground truth (for validation)
+[2026-03-23 08:15:51]   Next check in 120 min

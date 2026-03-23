@@ -205,3 +205,10 @@ mv: .watch_state.tmp: No such file or directory
 [2026-03-22 19:15:07]   Fetching ground truth for completed round 23
 [2026-03-22 19:15:08]   GT for round 23 fetched & converted
 [2026-03-22 19:15:08]   Next check in 120 min
+[2026-03-23 08:11:21] ── Checking for active round ──
+[2026-03-23 08:11:22]   Active: Round 1 | 0 min left | 0/5 seeds | 0/50 queries | state: new
+[2026-03-23 08:11:22]   >>> NEW ROUND 1 — running full pipeline
+[2026-03-23 08:15:50]   >>> Round 1 submitted successfully!
+[2026-03-23 08:15:50]   Fetching ground truth for completed round 23
+[2026-03-23 08:15:51]   GT for round 23 fetched & converted
+[2026-03-23 08:15:51]   Next check in 120 min

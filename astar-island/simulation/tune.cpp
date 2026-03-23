@@ -18,6 +18,7 @@
 #include "database.hpp"
 #include "features.hpp"
 #include "sim_params.hpp"
+#include "sim_core.hpp"
 
 // ─── Minimal JSON parser for query files ────────────────────────────────────
 // We only need: viewport.{x,y,w,h} and grid[][]
@@ -128,86 +129,14 @@ struct ObsData {
     }
 };
 
-// ─── Simulation code (self-contained for speed) ─────────────────────────────
+// Simulation code now in sim_core.hpp (shared with simulate.cpp)
+// Only tune-specific code below (evaluate_params, jitter_params, Nelder-Mead)
 
-struct SimSettlement {
-    int x, y;
-    float population, food, wealth, defense, tech;
-    bool has_port, alive;
-    int owner_id, longships;
-};
+// (SimWorld, init_world removed — now in sim_core.hpp)
 
-struct SimWorld {
-    int W, H;
-    std::vector<std::vector<int>> grid;
-    std::vector<SimSettlement> settlements;
-    std::mt19937 rng;
-    std::vector<std::vector<int>> settle_map;
-    std::set<std::pair<int,int>> war_pairs;
-
-    void mark_war(int fa, int fb) {
-        if (fa == fb) return;
-        war_pairs.insert({std::min(fa,fb), std::max(fa,fb)});
-    }
-    bool at_war(int fa, int fb) const {
-        if (fa == fb) return false;
-        return war_pairs.count({std::min(fa,fb), std::max(fa,fb)}) > 0;
-    }
-    void rebuild_settle_map() {
-        settle_map.assign(H, std::vector<int>(W, -1));
-        for (int i = 0; i < (int)settlements.size(); i++)
-            if (settlements[i].alive) settle_map[settlements[i].y][settlements[i].x] = i;
-    }
-    bool is_land(int x, int y) const {
-        if (x < 0 || x >= W || y < 0 || y >= H) return false;
-        return grid[y][x] != TERRAIN_OCEAN;
-    }
-    bool is_coastal(int x, int y) const {
-        if (!is_land(x, y)) return false;
-        for (int d = 0; d < 8; d++) {
-            int nx = x + DX[d], ny = y + DY[d];
-            if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
-            if (grid[ny][nx] == TERRAIN_OCEAN) return true;
-        }
-        return false;
-    }
-    int count_adjacent(int x, int y, int terrain) const {
-        int c = 0;
-        for (int d = 0; d < 8; d++) {
-            int nx = x + DX[d], ny = y + DY[d];
-            if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
-            if (grid[ny][nx] == terrain) c++;
-        }
-        return c;
-    }
-    float randf() { return std::uniform_real_distribution<float>(0.0f, 1.0f)(rng); }
-    float randn(float m, float s) { return std::normal_distribution<float>(m, s)(rng); }
-};
-
-SimWorld init_world(const std::vector<std::vector<int>>& ig, const SimParams& p, uint32_t seed) {
-    SimWorld w;
-    w.H = ig.size(); w.W = w.H > 0 ? ig[0].size() : 0;
-    w.rng.seed(seed); w.grid = ig;
-    w.settlements.reserve(w.W * w.H);
-    int nxt = 0;
-    for (int y = 0; y < w.H; y++) for (int x = 0; x < w.W; x++) {
-        int t = w.grid[y][x];
-        if (t == TERRAIN_SETTLEMENT || t == TERRAIN_PORT) {
-            SimSettlement s;
-            s.x = x; s.y = y;
-            s.population = p.init_population * (0.8f + w.randf() * 0.4f);
-            s.food = p.init_food * (0.8f + w.randf() * 0.4f);
-            s.wealth = 0; s.defense = p.init_defense * (0.8f + w.randf() * 0.4f);
-            s.tech = p.init_tech; s.has_port = (t == TERRAIN_PORT);
-            s.alive = true; s.owner_id = nxt++; s.longships = s.has_port ? 1 : 0;
-            w.settlements.push_back(s);
-        }
-    }
-    w.rebuild_settle_map();
-    return w;
-}
-
-void phase_growth(SimWorld& w, const SimParams& p) {
+// All phase functions and simulate_one now come from sim_core.hpp
+#if 0 // REMOVED — was duplicate of sim_core.hpp
+void phase_growth_REMOVED(SimWorld& w, const SimParams& p) {
     struct EC { int pi, tx, ty; };
     std::vector<EC> exps;
     for (int i = 0; i < (int)w.settlements.size(); i++) {
@@ -222,12 +151,13 @@ void phase_growth(SimWorld& w, const SimParams& p) {
             else if (t == TERRAIN_PLAINS || t == TERRAIN_EMPTY) fg += p.food_per_plains;
         }
         if (w.is_coastal(s.x, s.y)) fg += p.food_per_coastal;
-        fg *= (1.0f + 0.1f * s.tech);
-        s.food += fg; s.food = std::min(s.food, 1.0f);
+        fg *= (1.0f + p.tech_food_bonus * s.tech);
+        s.food += fg; s.food = std::min(s.food, p.food_cap);
         if (s.food > p.growth_threshold) {
-            float g = p.growth_rate * s.food; s.population += g; s.food -= g * 0.4f;
+            float g = p.growth_rate * s.food * (1.0f + p.wealth_growth_bonus * s.wealth);
+            s.population += g; s.food -= g * p.growth_food_cost;
         }
-        if (s.defense < 1.0f) s.defense += 0.02f;
+        if (s.defense < 1.0f) s.defense += p.defense_recovery * (1.0f + p.wealth_defense_bonus * s.wealth);
         s.defense = std::min(s.defense, 1.0f);
         if (!s.has_port && s.population > p.port_threshold && w.is_coastal(s.x, s.y))
             if (w.randf() < p.port_prob) { s.has_port = true; w.grid[s.y][s.x] = TERRAIN_PORT; }
@@ -264,11 +194,11 @@ void phase_growth(SimWorld& w, const SimParams& p) {
         if (w.settle_map[e.ty][e.tx] != -1) continue;
         SimSettlement ns;
         ns.x = e.tx; ns.y = e.ty;
-        ns.population = par.population * 0.25f; par.population -= ns.population;
-        ns.food = 0.3f; ns.wealth = 0; ns.defense = 0.5f;
-        ns.tech = par.tech * 0.5f; ns.has_port = false; ns.alive = true;
+        ns.population = par.population * p.expansion_split; par.population -= ns.population;
+        ns.food = p.new_settle_food; ns.wealth = 0; ns.defense = p.new_settle_defense;
+        ns.tech = par.tech * p.new_settle_tech_frac; ns.has_port = false; ns.alive = true;
         ns.owner_id = par.owner_id; ns.longships = 0;
-        if (w.is_coastal(e.tx, e.ty) && w.randf() < 0.15f) {
+        if (w.is_coastal(e.tx, e.ty) && w.randf() < p.new_settle_port_prob) {
             ns.has_port = true; w.grid[e.ty][e.tx] = TERRAIN_PORT;
         } else { w.grid[e.ty][e.tx] = TERRAIN_SETTLEMENT; }
         w.settle_map[e.ty][e.tx] = (int)w.settlements.size();
@@ -300,13 +230,13 @@ void phase_conflict(SimWorld& w, const SimParams& p) {
         int ti = tgts[w.rng() % tgts.size()];
         auto& tgt = w.settlements[ti];
         w.mark_war(s.owner_id, tgt.owner_id);
-        float atk = s.population * (1.0f + 0.2f * s.tech);
+        float atk = s.population * (1.0f + p.tech_attack_bonus * s.tech);
         float def = tgt.defense * tgt.population;
         if (atk > def * (0.5f + w.randf())) {
-            float loot = std::min(tgt.food * p.raid_loot_frac, 0.2f);
+            float loot = std::min(tgt.food * p.raid_loot_frac, p.raid_loot_cap);
             s.food += loot; tgt.food -= loot;
-            s.wealth += 0.01f; tgt.defense -= p.raid_damage; tgt.population -= 0.05f;
-            if (tgt.defense < 0.1f && w.randf() < p.conquest_prob) tgt.owner_id = s.owner_id;
+            s.wealth += p.raid_wealth_gain; tgt.defense -= p.raid_damage; tgt.population -= p.raid_pop_loss;
+            if (tgt.defense < p.conquest_threshold && w.randf() < p.conquest_prob) tgt.owner_id = s.owner_id;
         }
     }
 }
@@ -333,13 +263,13 @@ void phase_trade(SimWorld& w, const SimParams& p) {
 void phase_winter(SimWorld& w, const SimParams& p) {
     float sev = p.winter_base_loss + w.randn(0, p.winter_variance);
     if (w.randf() < p.winter_catastrophe_prob) sev *= p.winter_catastrophe_mult;
-    sev = std::max(0.05f, std::min(sev, 0.9f));
+    sev = std::max(p.winter_severity_min, std::min(sev, p.winter_severity_max));
     std::vector<int> col;
     for (int i = 0; i < (int)w.settlements.size(); i++) {
         auto& s = w.settlements[i];
         if (!s.alive) continue;
-        s.food -= sev * (1.0f + 0.05f * s.population);
-        if (s.food < 0) { s.population += s.food * 0.3f; if (s.population < 0) s.population = 0; s.food = 0; }
+        s.food -= sev * (1.0f + p.winter_pop_scale * s.population);
+        if (s.food < 0) { s.population += s.food * p.starvation_rate; if (s.population < 0) s.population = 0; s.food = 0; }
         if (s.population < p.collapse_pop || (s.food < p.collapse_food + 0.01f && s.defense < p.collapse_defense))
             col.push_back(i);
     }
@@ -352,7 +282,7 @@ void phase_winter(SimWorld& w, const SimParams& p) {
             if (j==idx || !w.settlements[j].alive || w.settlements[j].owner_id!=s.owner_id) continue;
             float d = sqrtf((float)((s.x-w.settlements[j].x)*(s.x-w.settlements[j].x)+
                                     (s.y-w.settlements[j].y)*(s.y-w.settlements[j].y)));
-            if (d <= 5.0f) near.push_back(j);
+            if (d <= p.collapse_dispersion) near.push_back(j);
         }
         if (!near.empty()) { float sh = pop/near.size(); for (int j : near) w.settlements[j].population += sh; }
     }
@@ -371,9 +301,9 @@ void phase_environment(SimWorld& w, const SimParams& p) {
         if (bi >= 0 && w.randf() < p.ruin_reclaim_prob) {
             auto& pat = w.settlements[bi];
             SimSettlement ns; ns.x=x; ns.y=y;
-            ns.population = pat.population*0.15f; ns.food=0.2f; ns.wealth=0; ns.defense=0.4f;
-            ns.tech = pat.tech*0.3f; ns.alive=true; ns.owner_id=pat.owner_id; ns.longships=0;
-            if (w.is_coastal(x,y) && w.randf()<0.3f) { ns.has_port=true; ch.push_back({x,y,TERRAIN_PORT}); }
+            ns.population = pat.population*p.reclaim_pop_frac; ns.food=p.reclaim_food; ns.wealth=0; ns.defense=p.reclaim_defense;
+            ns.tech = pat.tech*p.reclaim_tech_frac; ns.alive=true; ns.owner_id=pat.owner_id; ns.longships=0;
+            if (w.is_coastal(x,y) && w.randf()<p.reclaim_port_prob) { ns.has_port=true; ch.push_back({x,y,TERRAIN_PORT}); }
             else { ns.has_port=false; ch.push_back({x,y,TERRAIN_SETTLEMENT}); }
             w.settlements.push_back(ns); continue;
         }
@@ -397,6 +327,7 @@ void simulate_one(SimWorld& w, const SimParams& p) {
         if ((int)w.settlements.size() > w.W * w.H * 2) break;
     }
 }
+#endif // REMOVED
 
 // ─── Jitter (same as simulate.cpp) ──────────────────────────────────────────
 

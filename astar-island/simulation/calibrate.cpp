@@ -99,6 +99,24 @@ static const std::vector<ParamDef> PARAM_DEFS = {
     // Wealth interactions (NEW mechanics)
     {"wealth_growth_bonus",  0.0f, 2.0f,  0.0f},
     {"wealth_defense_bonus", 0.0f, 2.0f,  0.0f},
+
+    // Tier 1: settlement viability (v3)
+    {"new_settle_food",      0.05f, 1.0f, 0.3f},
+    {"new_settle_defense",   0.1f,  1.0f, 0.5f},
+    {"new_settle_tech_frac", 0.1f,  1.0f, 0.5f},
+    {"new_settle_port_prob", 0.02f, 0.5f, 0.15f},
+    {"starvation_rate",      0.05f, 0.8f, 0.3f},
+    {"winter_pop_scale",     0.0f,  0.3f, 0.05f},
+    {"winter_severity_min",  0.0f,  0.2f, 0.05f},
+    {"winter_severity_max",  0.5f,  1.0f, 0.9f},
+    {"reclaim_pop_frac",     0.02f, 0.5f, 0.15f},
+    {"reclaim_food",         0.05f, 0.8f, 0.2f},
+    {"reclaim_defense",      0.1f,  0.8f, 0.4f},
+    {"reclaim_tech_frac",    0.05f, 0.8f, 0.3f},
+    {"reclaim_port_prob",    0.05f, 0.6f, 0.3f},
+    {"raid_pop_loss",        0.01f, 0.2f, 0.05f},
+    {"raid_loot_cap",        0.05f, 0.5f, 0.2f},
+    {"raid_wealth_gain",     0.001f,0.1f, 0.01f},
 };
 
 static const int N_PARAMS = PARAM_DEFS.size();
@@ -168,6 +186,24 @@ SimParams vec_to_params(const std::vector<double>& v) {
     p.wealth_growth_bonus  = v[i++];
     p.wealth_defense_bonus = v[i++];
 
+    // v3: settlement viability
+    p.new_settle_food      = v[i++];
+    p.new_settle_defense   = v[i++];
+    p.new_settle_tech_frac = v[i++];
+    p.new_settle_port_prob = v[i++];
+    p.starvation_rate      = v[i++];
+    p.winter_pop_scale     = v[i++];
+    p.winter_severity_min  = v[i++];
+    p.winter_severity_max  = v[i++];
+    p.reclaim_pop_frac     = v[i++];
+    p.reclaim_food         = v[i++];
+    p.reclaim_defense      = v[i++];
+    p.reclaim_tech_frac    = v[i++];
+    p.reclaim_port_prob    = v[i++];
+    p.raid_pop_loss        = v[i++];
+    p.raid_loot_cap        = v[i++];
+    p.raid_wealth_gain     = v[i++];
+
     return p;
 }
 
@@ -189,7 +225,12 @@ std::vector<double> params_to_vec(const SimParams& p) {
         p.growth_food_cost, p.tech_food_bonus, p.food_cap, p.expansion_split,
         p.defense_recovery, p.tech_attack_bonus, p.conquest_threshold, p.collapse_dispersion,
         // Wealth interactions
-        p.wealth_growth_bonus, p.wealth_defense_bonus
+        p.wealth_growth_bonus, p.wealth_defense_bonus,
+        // v3: settlement viability
+        p.new_settle_food, p.new_settle_defense, p.new_settle_tech_frac, p.new_settle_port_prob,
+        p.starvation_rate, p.winter_pop_scale, p.winter_severity_min, p.winter_severity_max,
+        p.reclaim_pop_frac, p.reclaim_food, p.reclaim_defense, p.reclaim_tech_frac, p.reclaim_port_prob,
+        p.raid_pop_loss, p.raid_loot_cap, p.raid_wealth_gain
     };
 }
 

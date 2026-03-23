@@ -79,6 +79,31 @@ struct SimParams {
     // Wealth interactions (NEW — default 0.0 = no effect, matching old behavior)
     float wealth_growth_bonus  = 0.0f;  // wealth multiplier on growth rate
     float wealth_defense_bonus = 0.0f;  // wealth multiplier on defense recovery
+
+    // ─── Tier 1 settlement viability params (v3) ────────────────────────────
+    // New settlement founding
+    float new_settle_food      = 0.3f;   // starting food for expansions
+    float new_settle_defense   = 0.5f;   // starting defense for expansions
+    float new_settle_tech_frac = 0.5f;   // fraction of parent tech inherited
+    float new_settle_port_prob = 0.15f;  // coastal port chance for new settlements
+
+    // Starvation / winter dynamics
+    float starvation_rate      = 0.3f;   // pop loss rate when food < 0
+    float winter_pop_scale     = 0.05f;  // population-scaled winter food loss
+    float winter_severity_min  = 0.05f;  // min winter severity clamp
+    float winter_severity_max  = 0.9f;   // max winter severity clamp
+
+    // Ruin reclamation viability
+    float reclaim_pop_frac     = 0.15f;  // pop fraction from patron
+    float reclaim_food         = 0.2f;   // starting food
+    float reclaim_defense      = 0.4f;   // starting defense
+    float reclaim_tech_frac    = 0.3f;   // tech fraction from patron
+    float reclaim_port_prob    = 0.3f;   // coastal port chance
+
+    // Combat damage details
+    float raid_pop_loss        = 0.05f;  // flat pop loss on defender per raid
+    float raid_loot_cap        = 0.2f;   // max food looted per raid
+    float raid_wealth_gain     = 0.01f;  // wealth gained per successful raid
 };
 
 // ─── Save/Load params (SIMP binary format) ──────────────────────────────────
