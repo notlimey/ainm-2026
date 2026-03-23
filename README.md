@@ -1,5 +1,5 @@
 # AINM 2026
 Team: Coldmonkeys
-notlimey
-Zephyr2134
-
+- notlimey
+- Zephyr2134
+- morsig01
